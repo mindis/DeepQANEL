@@ -37,22 +37,15 @@ public class QueryConstructor {
 
     public static void initialize(Map<Integer, String> sp, Map<Integer, String> s, Set<String> v, Set<String> f) {
 
-        specialSemanticTypes = new HashMap<>();
-        for (Integer i : sp.keySet()) {
-            specialSemanticTypes.put(i, sp.get(i));
-        }
-
-        semanticTypes = new HashMap<>();
-        for (Integer i : s.keySet()) {
-            semanticTypes.put(i, s.get(i));
-        }
-
+        specialSemanticTypes = sp;
+        
+        semanticTypes = s;
+        
         validPOSTags = v;
 
         frequentWordsToExclude = f;
 
         expressions = new ExpressionFactory();
-
     }
 
     public static String getSPARQLQuery(State state) {
@@ -72,18 +65,32 @@ public class QueryConstructor {
             HashMap<Integer, RDFDUDES> instantiatedDUDES = instantiateDUDES(state);
 
             RDFDUDES headDUDE = SemanticComposition.compose(state, instantiatedDUDES, validPOSTags, frequentWordsToExclude);
+            
+            if(headDUDE == null){
+                return "";
+            }
 
             headDUDE.postprocess();
 
-            boolean selectQuery = true;
+            boolean isSELECTQuery = true;
 
             String questionString = state.getDocument().getQuestionString();
 
             if (questionString.startsWith("Did") || questionString.startsWith("Does") || questionString.startsWith("Do") || questionString.startsWith("Is") || questionString.startsWith("Were") || questionString.startsWith("Was") || questionString.startsWith("Are")) {
-                selectQuery = false;
+                isSELECTQuery = false;
             }
+            
+            boolean hasReturnVariable = false;
+            for(Integer i : state.getHiddenVariables().keySet()){
+                if(specialSemanticTypes.containsKey(state.getHiddenVariables().get(i).getDudeId())){
+                    hasReturnVariable = true;
+                     break;
+                }
+            }
+            
+//            isSELECTQuery = hasReturnVariable;
 
-            query = headDUDE.convertToSPARQL(selectQuery).toString();
+            query = headDUDE.convertToSPARQL(isSELECTQuery).toString();
 
             //remove double dots from the query
             if (query.contains(" . . ")) {

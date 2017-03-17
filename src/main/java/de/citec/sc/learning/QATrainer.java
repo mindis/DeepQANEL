@@ -198,7 +198,7 @@ public class QATrainer {
 			for (int i = 0; i < sampledInstances.size(); i++) {
 				InstanceT instance = sampledInstances.get(i).getInstance();
 				ResultT goldResult = sampledInstances.get(i).getGoldResult();
-				log.info("===========TRAIN===========");
+				log.info("===========QA TRAIN===========");
 				log.info("Epoch: %s/%s; Instance: %s/%s", e + 1, numberOfEpochs, i + 1, sampledInstances.size());
 				log.info("Gold Result: %s", goldResult);
 				log.info("Instance: %s", instance);
@@ -297,7 +297,7 @@ public class QATrainer {
 		for (int i = 0; i < sampledInstances.size(); i++) {
 			InstanceT instance = sampledInstances.get(i).getInstance();
 			ResultT goldResult = sampledInstances.get(i).getGoldResult();
-			log.info("===========TEST============");
+			log.info("===========QA TEST============");
 			log.info("Document: %s/%s", i + 1, sampledInstances.size());
 			log.info("Content   : %s", instance);
 			log.info("Gold Result: %s", goldResult);

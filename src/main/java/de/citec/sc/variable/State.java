@@ -7,7 +7,9 @@ package de.citec.sc.variable;
 
 import de.citec.sc.corpus.AnnotatedDocument;
 import de.citec.sc.query.Candidate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -156,6 +158,18 @@ public class State extends AbstractState<AnnotatedDocument> {
         this.document = document;
     }
 
+    public List<Integer> getUsedSlots(Integer headNodeIndex){
+        List<Integer> slots = new ArrayList<>();
+        
+        for(Integer i : slotVariables.keySet()){
+            if(headNodeIndex == slotVariables.get(i).getParentTokenID()){
+            
+                slots.add(slotVariables.get(i).getSlotNumber());
+            }
+        }
+        
+        return slots;
+    }
 
 
 }

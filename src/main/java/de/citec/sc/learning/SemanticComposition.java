@@ -55,7 +55,7 @@ public class SemanticComposition {
             RDFDUDES head = dudeTypes.get(node);
             
             String argument = state.getSlotVariables().get(depNodeIndex).getSlotNumber() + "";
-
+            
 //                try {
 //                    System.out.println("HEAD " + head + " Node: "+node);
 //                    System.out.println("ARGUMENT " + argument);

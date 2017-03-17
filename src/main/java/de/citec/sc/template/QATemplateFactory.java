@@ -23,10 +23,12 @@ public class QATemplateFactory implements TemplateFactory<AnnotatedDocument, Sta
     private static Set<String> validPOSTags;
     private static Set<String> frequentWordsToExclude;
     private static Map<Integer, String> semanticTypes;
+    private static Map<Integer, String> specialSemanticTypes;
 
-    public static void initialize(Set<String> v, Set<String> f, Map<Integer, String> s) {
+    public static void initialize(Set<String> v, Set<String> f, Map<Integer, String> s, Map<Integer, String> sp) {
         validPOSTags = v;
         semanticTypes = s;
+        specialSemanticTypes = sp;
         frequentWordsToExclude = f;
     }
 
@@ -37,11 +39,13 @@ public class QATemplateFactory implements TemplateFactory<AnnotatedDocument, Sta
             case "NodeSimilarityTemplate":
                 return new NodeSimilarityTemplate();
             case "LexicalTemplate":
-                return new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes);
+                return new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes);
             case "ResourceTemplate":
                 return new ResourceTemplate(validPOSTags, semanticTypes);
             case "PropertyTemplate":
-                return new PropertyTemplate(validPOSTags, semanticTypes);
+                return new PropertyTemplate(validPOSTags, semanticTypes);//new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes
+            case "QALexicalTemplate":
+                return new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
 
         }
 

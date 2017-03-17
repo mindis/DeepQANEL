@@ -25,13 +25,13 @@ import sampling.Explorer;
  *
  * @author sherzod
  */
-public class DependentNodeExplorer implements Explorer<State> {
+public class EdgeExplorer implements Explorer<State> {
 
     private Map<Integer, String> semanticTypes;
     private Set<String> validPOSTags;
     private Set<String> frequentWordsToExclude;
 
-    public DependentNodeExplorer(Map<Integer, String> assignedDUDES, Set<String> validPOSTags, Set<String> wordToExclude) {
+    public EdgeExplorer(Map<Integer, String> assignedDUDES, Set<String> validPOSTags, Set<String> wordToExclude) {
         this.semanticTypes = assignedDUDES;
         this.validPOSTags = validPOSTags;
         this.frequentWordsToExclude = wordToExclude;
@@ -65,7 +65,6 @@ public class DependentNodeExplorer implements Explorer<State> {
 //                            continue;
 //                        }
 //                    }
-                
                 Set<Candidate> headNodeCandidates = getDBpediaMatches(dudeName, node);
 
                 if (headNodeCandidates.isEmpty()) {
@@ -80,21 +79,20 @@ public class DependentNodeExplorer implements Explorer<State> {
                     int headOfHeadNodeIndex = currentState.getDocument().getParse().getParentNode(indexOfNode);
                     String headOfHeadPOS = currentState.getDocument().getParse().getPOSTag(headOfHeadNodeIndex);
                     String headOfHeadToken = currentState.getDocument().getParse().getToken(headOfHeadNodeIndex);
-                    
-                    if(frequentWordsToExclude.contains(headOfHeadToken)){
+
+                    if (frequentWordsToExclude.contains(headOfHeadToken)) {
                         depNodes = currentState.getDocument().getParse().getSiblings(indexOfNode, validPOSTags, frequentWordsToExclude);
                     }
                 }
 
                 for (Integer depNodeIndex : depNodes) {
-                    
+
                     //greedy exploring, skip nodes with assigned URI
-                    if(!currentState.getHiddenVariables().get(depNodeIndex).getCandidate().getUri().equals("EMPTY_STRING")){
+                    if (!currentState.getHiddenVariables().get(depNodeIndex).getCandidate().getUri().equals("EMPTY_STRING")) {
                         continue;
                     }
-                    
-                    String depNode = currentState.getDocument().getParse().getNodes().get(depNodeIndex);
 
+                    String depNode = currentState.getDocument().getParse().getNodes().get(depNodeIndex);
 
                     for (Integer indexOfDepDude : semanticTypes.keySet()) {
 
@@ -109,8 +107,8 @@ public class DependentNodeExplorer implements Explorer<State> {
                         for (Candidate headNodeCandidate : headNodeCandidates) {
                             for (Candidate depNodeCandidate : depNodeCandidates) {
 
-                                if(headNodeCandidate.getUri().equals("http://dbpedia.org/ontology/field###http://dbpedia.org/resource/Oceanography") && depNodeCandidate.getUri().equals("http://dbpedia.org/ontology/birthPlace###http://dbpedia.org/resource/Sweden")){
-                                    int z=1;
+                                if (headNodeCandidate.getUri().equals("http://dbpedia.org/ontology/field###http://dbpedia.org/resource/Oceanography") && depNodeCandidate.getUri().equals("http://dbpedia.org/ontology/birthPlace###http://dbpedia.org/resource/Sweden")) {
+                                    int z = 1;
                                 }
                                 boolean isSubject = DBpediaEndpoint.isSubjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
                                 boolean isObject = DBpediaEndpoint.isObjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
@@ -120,11 +118,13 @@ public class DependentNodeExplorer implements Explorer<State> {
 
                                     s.addHiddenVariable(indexOfNode, indexOfDude, headNodeCandidate);
                                     s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
-                                    
-                                    //Argument is 1 => subj
-                                    s.addSlotVariable(depNodeIndex, indexOfNode, 1);
 
-                                    if (!s.equals(currentState)) {
+                                    //Argument is 1 => subj
+                                    if (depDudeName.equals("Property") || dudeName.equals("Property")) {
+                                        s.addSlotVariable(depNodeIndex, indexOfNode, 1);
+                                    }
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
                                         newStates.add(s);
                                     }
                                 }
@@ -135,9 +135,11 @@ public class DependentNodeExplorer implements Explorer<State> {
                                     s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
 
                                     //Argument number is 2 => obj
-                                    s.addSlotVariable(depNodeIndex, indexOfNode, 2);
-                                    
-                                    if (!s.equals(currentState)) {
+                                    if (depDudeName.equals("Property") || dudeName.equals("Property")) {
+                                        s.addSlotVariable(depNodeIndex, indexOfNode, 2);
+                                    }
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
                                         newStates.add(s);
                                     }
                                 }

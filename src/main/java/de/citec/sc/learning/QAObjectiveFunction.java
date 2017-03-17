@@ -22,9 +22,37 @@ import org.apache.jena.query.QueryFactory;
  */
 public class QAObjectiveFunction extends ObjectiveFunction<State, String> implements Serializable {
 
+    private boolean useQueryEvaluator = true;
+
+    public void setUseQueryEvaluator(boolean useQueryEvaluator) {
+        this.useQueryEvaluator = useQueryEvaluator;
+    }
+
     public double computeValue(State deptState, String goldState) {
 
         return computeScore(deptState, goldState);
+    }
+
+    public double computeValue(String query, String goldState) {
+
+        String constructedQuery = query;
+
+        if (constructedQuery.trim().isEmpty()) {
+            return 0;
+        }
+        if (SPARQLParser.extractTriplesFromQuery(constructedQuery).isEmpty()) {
+            return 0;
+        }
+
+        double score1 = AnswerEvaluator.evaluate(constructedQuery, goldState);
+        double score2 = 0;
+        if (useQueryEvaluator) {
+            score2 = QueryEvaluator.evaluate(constructedQuery, goldState);
+        }
+
+        double score = Math.max(score1, score2);
+        
+        return score;
     }
 
     @Override
@@ -32,8 +60,18 @@ public class QAObjectiveFunction extends ObjectiveFunction<State, String> implem
 
         String constructedQuery = QueryConstructor.getSPARQLQuery(state);
 
+        if (constructedQuery.trim().isEmpty()) {
+            return 0;
+        }
+        if (SPARQLParser.extractTriplesFromQuery(constructedQuery).isEmpty()) {
+            return 0;
+        }
+
         double score1 = AnswerEvaluator.evaluate(constructedQuery, goldState);
-        double score2 = QueryEvaluator.evaluate(constructedQuery, goldState);
+        double score2 = 0;
+        if (useQueryEvaluator) {
+            score2 = QueryEvaluator.evaluate(constructedQuery, goldState);
+        }
 
         double score = Math.max(score1, score2);
 

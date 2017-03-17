@@ -28,6 +28,15 @@ public class NELObjectiveFunction extends ObjectiveFunction<State, String> imple
 
         return computeScore(deptState, goldState);
     }
+    public double computeValue(String query, String goldState) {
+
+        List<String> uris1 = SPARQLParser.extractURIsFromQuery(query);
+        List<String> uris2 = SPARQLParser.extractURIsFromQuery(goldState);
+
+        double value = BagOfLinksEvaluator.evaluate(uris1, uris2);
+        
+        return value;
+    }
 
     @Override
     protected double computeScore(State deptState, String goldState) {

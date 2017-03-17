@@ -128,7 +128,7 @@ public class NELTrainer {
             for (int i = 0; i < instances.size(); i++) {
                 InstanceT instance = instances.get(i);
                 ResultT goldResult = getResult.apply(instances.get(i));
-                log.info("===========TRAIN===========");
+                log.info("===========NEL TRAIN===========");
                 log.info("Epoch: %s/%s; Instance: %s/%s", e + 1, numberOfEpochs, i + 1, instances.size());
                 log.info("Gold Result: %s", goldResult);
                 log.info("Instance: %s", instance);
@@ -203,7 +203,7 @@ public class NELTrainer {
         for (int i = 0; i < instances.size(); i++) {
             InstanceT instance = instances.get(i);
             ResultT goldResult = getResult.apply(instances.get(i));
-            log.info("===========TEST============");
+            log.info("===========NEL TEST============");
             log.info("Document: %s/%s", i + 1, instances.size());
             log.info("Content   : %s", instance);
             log.info("Gold Result: %s", goldResult);

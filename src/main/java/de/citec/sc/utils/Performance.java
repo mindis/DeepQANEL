@@ -63,10 +63,25 @@ public class Performance {
         parsedQuestions.clear();
     }
 
-    public static void logTest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
+    public static void logNELTest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
 
-        String fileName = "Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
 
+        String allStatesAsString = "";
+
+        int stateCount = 0;
+        for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
+
+            allStatesAsString += "Instance#"+stateCount+"\n";
+            
+            stateCount ++;
+            for (State state : triple.getStates()) {
+                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toString()+"\n\n";
+            }
+            
+            allStatesAsString += "========================================================\n";
+        }
+        
         String correctInstances = "";
         String inCorrectInstances = "";
 
@@ -119,16 +134,96 @@ public class Performance {
                 //handle it
             }
         }
+
+        FileFactory.writeListToFile(outputDir + "/parsedInstances_" + fileName + ".txt", correctInstances, false);
+        FileFactory.writeListToFile(outputDir + "/unParsedInstances_" + fileName + ".txt", inCorrectInstances, false);
+
+        FileFactory.writeListToFile(outputDir + "/states_" + fileName + ".txt", allStatesAsString, false);
         
-        FileFactory.writeListToFile(outputDir+"/parsedInstances_" + fileName + ".txt", correctInstances, false);
-        FileFactory.writeListToFile(outputDir+"/unParsedInstances_" + fileName + ".txt", inCorrectInstances, false);
+        double correct = c / (double) testResults.size();
+        double inCorrect = (testResults.size() - c) / (double) testResults.size();
+
+        System.out.println("Test results\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
+        System.out.println("Incorrect predictions: " + (testResults.size() - c) + "/" + testResults.size() + " = " + inCorrect);
+        System.out.println("MACRO F1: " + MACROF1);
+    }
+
+    public static void logQATest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
+
+        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+
+        String allStatesAsString = "";
+
+        int stateCount = 0;
+        for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
+
+            allStatesAsString += "Instance#"+stateCount+"\n";
+            
+            stateCount ++;
+            for (State state : triple.getStates()) {
+                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toString()+"\n-----------------------------------------------------------------------\n";
+            }
+            
+            allStatesAsString += "========================================================\n";
+        }
+
+        String correctInstances = "";
+        String inCorrectInstances = "";
+
+        double overAllScore = 0;
+
+        int c = 0;
+        for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
+
+            double maxScore = 0;
+            State maxState = null;
+            for (State state : triple.getStates()) {
+
+                double s = function.score(state, triple.getGoldResult());
+                maxScore = s;
+                maxState = state;
+                break;
+            }
+
+            overAllScore += maxScore;
+
+            if (maxScore == 1.0) {
+                correctInstances += maxState + "\nScore: " + maxScore + "\n========================================================================\n";
+                c++;
+            } else {
+                inCorrectInstances += maxState + "\nScore: " + maxScore + "\n========================================================================\n";
+            }
+        }
+
+        double MACROF1 = overAllScore / (double) testResults.size();
+        correctInstances = c + "/" + testResults.size() + "\nMACRO F1:" + MACROF1 + "\n\n" + correctInstances;
+        inCorrectInstances = (testResults.size() - c) + "/" + testResults.size() + "\nMACRO F1:" + MACROF1 + "\n\n" + inCorrectInstances;
+
+        String outputDir = "testResult";
+
+        File theDir = new File(outputDir);
+
+        if (!theDir.exists()) {
+
+            try {
+                theDir.mkdir();
+            } catch (SecurityException se) {
+                //handle it
+            }
+        }
+
+        FileFactory.writeListToFile(outputDir + "/parsedInstances_" + fileName + ".txt", correctInstances, false);
+        FileFactory.writeListToFile(outputDir + "/unParsedInstances_" + fileName + ".txt", inCorrectInstances, false);
         
-        double correct = c/(double)testResults.size();
-        double inCorrect = (testResults.size() - c)/(double)testResults.size();
-        
-        System.out.println("Test results\n\nCorrect predictions: "+c + "/" + testResults.size() + " = "+correct);
-        System.out.println("Incorrect predictions: "+(testResults.size() - c) + "/" + testResults.size()+" = "+inCorrect);
-        System.out.println("MACRO F1: "+ MACROF1);
+        //states
+        FileFactory.writeListToFile(outputDir + "/states_" + fileName + ".txt", allStatesAsString, false);
+
+        double correct = c / (double) testResults.size();
+        double inCorrect = (testResults.size() - c) / (double) testResults.size();
+
+        System.out.println("Test results\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
+        System.out.println("Incorrect predictions: " + (testResults.size() - c) + "/" + testResults.size() + " = " + inCorrect);
+        System.out.println("MACRO F1: " + MACROF1);
     }
 
     public static void addParsed(String s, String q) {
@@ -140,10 +235,10 @@ public class Performance {
     }
 
     public static void addUnParsed(String s, String q) {
-        
+
         //make it un parsed if the parsed map doesn't contain
         //if parsed map contains it means that at some point it parsed, keep it like this
-        if(!parsedQuestions.containsKey(s)){
+        if (!parsedQuestions.containsKey(s)) {
             unParsedQuestions.put(s, q);
         }
     }

@@ -26,13 +26,13 @@ import templates.AbstractTemplate;
  *
  * @author sherzod
  */
-public class LexicalTemplate extends AbstractTemplate<AnnotatedDocument, State, StateFactorScope<State>> {
+public class NELLexicalTemplate extends AbstractTemplate<AnnotatedDocument, State, StateFactorScope<State>> {
 
     private Set<String> validPOSTags;
     private Set<String> frequentWordsToExclude;
     private Map<Integer, String> semanticTypes;
 
-    public LexicalTemplate(Set<String> validPOSTags, Set<String> frequentWordsToExclude, Map<Integer, String> s) {
+    public NELLexicalTemplate(Set<String> validPOSTags, Set<String> frequentWordsToExclude, Map<Integer, String> s) {
         this.validPOSTags = validPOSTags;
         this.semanticTypes = s;
         this.frequentWordsToExclude = frequentWordsToExclude;
@@ -81,7 +81,7 @@ public class LexicalTemplate extends AbstractTemplate<AnnotatedDocument, State, 
 
             //add lexical feature only for nouns, noun phrases etc.
             if (dependentNodes.isEmpty() && (headPOS.startsWith("NN") || headPOS.startsWith("JJ"))) {
-                featureVector.addToValue("LEXICAL FEATURE: URI: " + headURI + " TOKEN: " + headToken + " POS : " + headPOS + " SEM-TYPE: " + dudeName, 1.0);
+//                featureVector.addToValue("LEXICAL FEATURE: URI: " + headURI + " TOKEN: " + headToken + " POS : " + headPOS + " SEM-TYPE: " + dudeName, 1.0);
             }
 
             if (!dependentNodes.isEmpty()) {

@@ -1,6 +1,5 @@
 package de.citec.sc.main;
 
-import corpus.SampledInstance;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,20 +14,19 @@ import de.citec.sc.learning.NELTrainer;
 import de.citec.sc.learning.QAHybridSamplingStrategyCallback;
 import de.citec.sc.learning.QAObjectiveFunction;
 import de.citec.sc.learning.QATrainer;
-import de.citec.sc.sampling.DependentNodeExplorer;
+import de.citec.sc.sampling.EdgeExplorer;
 import de.citec.sc.sampling.MyBeamSearchSampler;
-import de.citec.sc.sampling.SingleNodeExplorer;
+import de.citec.sc.sampling.SlotExplorer;
 import de.citec.sc.sampling.StateInitializer;
-import de.citec.sc.template.LexicalTemplate;
+import de.citec.sc.template.NELLexicalTemplate;
+import de.citec.sc.template.QALexicalTemplate;
 import de.citec.sc.template.QATemplateFactory;
 import de.citec.sc.utils.Performance;
 import de.citec.sc.utils.ProjectConfiguration;
 import de.citec.sc.variable.State;
-import exceptions.UnkownTemplateRequestedException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import learning.AdvancedLearner;
 import learning.Learner;
 import learning.Model;
@@ -60,12 +58,14 @@ public class Pipeline {
     private static Map<Integer, String> semanticTypes;
     private static Map<Integer, String> specialSemanticTypes;
     private static Set<String> frequentWordsToExclude;
+    private static Set<String> wordsWithSpecialSemanticTypes;
 
-    public static void initialize(Set<String> v, Map<Integer, String> s, Map<Integer, String> st, Set<String> f) {
+    public static void initialize(Set<String> v, Map<Integer, String> s, Map<Integer, String> st, Set<String> f, Set<String> w) {
         validPOSTags = v;
         semanticTypes = s;
         specialSemanticTypes = st;
         frequentWordsToExclude = f;
+        wordsWithSpecialSemanticTypes = w;
 
         NUMBER_OF_SAMPLING_STEPS = ProjectConfiguration.getNumberOfSamplingSteps();
         NUMBER_OF_EPOCHS = ProjectConfiguration.getNumberOfEpochs();
@@ -77,15 +77,14 @@ public class Pipeline {
     }
 
     public static List<Model<AnnotatedDocument, State>> train(List<AnnotatedDocument> trainingDocuments) {
-        
+
         Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> nelPair = trainNEL(trainingDocuments);
 
         Model<AnnotatedDocument, State> nelModel = null;
         List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelStates = null;
-        
+
         Model<AnnotatedDocument, State> qaModel = null;
         List<SampledMultipleInstance<AnnotatedDocument, String, State>> qaStates = null;
-        
 
         for (Model<AnnotatedDocument, State> m : nelPair.keySet()) {
             nelModel = m;
@@ -93,35 +92,45 @@ public class Pipeline {
         }
 
         Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> qaPair = trainQA(nelStates);
-        
+
         for (Model<AnnotatedDocument, State> m : qaPair.keySet()) {
             qaModel = m;
             qaStates = nelPair.get(m);
         }
-        
+
         List<Model<AnnotatedDocument, State>> models = new ArrayList<>();
         models.add(nelModel);
         models.add(qaModel);
-        
+
         return models;
     }
+
     public static void test(List<Model<AnnotatedDocument, State>> models, List<AnnotatedDocument> testDocuments) {
-        
+
         Model<AnnotatedDocument, State> nelModel = models.get(0);
         Model<AnnotatedDocument, State> qaModel = models.get(1);
         
-        List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances = testNEL(nelModel, testDocuments);
-        List<SampledMultipleInstance<AnnotatedDocument, String, State>> qaInstances = testQA(nelModel, nelInstances);
-        
+        System.out.println("NEL Model: \n"+nelModel.toDetailedString());
+        System.out.println("QA Model: \n"+qaModel.toDetailedString());
+
         NELObjectiveFunction nelObjectiveFunction = new NELObjectiveFunction();
-        QAObjectiveFunction qaObjectiveFunction = new QAObjectiveFunction();
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances = testNEL(nelModel, testDocuments);
         
         //test results for linking task
-        Performance.logTest(nelInstances, nelObjectiveFunction);
+        System.out.println("NEL task : \n\n");
+        Performance.logNELTest(nelInstances, nelObjectiveFunction);
         
+        
+        
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> qaInstances = testQA(qaModel, nelInstances);
+//        
+        QAObjectiveFunction qaObjectiveFunction = new QAObjectiveFunction();
+        qaObjectiveFunction.setUseQueryEvaluator(false);
+//
         //test results for qa task
-        Performance.logTest(qaInstances, qaObjectiveFunction);
-        
+        System.out.println("QA task : \n\n");
+        Performance.logQATest(nelInstances, qaObjectiveFunction);
+
     }
 
     private static Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> trainNEL(List<AnnotatedDocument> trainingDocuments) {
@@ -140,7 +149,7 @@ public class Pipeline {
         List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
 
         /*
          * Create the scorer object that computes a score from the factors'
@@ -165,7 +174,7 @@ public class Pipeline {
          */
         List<Explorer<State>> explorers = new ArrayList<>();
 //        explorers.add(new SingleNodeExplorer(semanticTypes, frequentWordsToExclude, validPOSTags));
-        explorers.add(new DependentNodeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
+        explorers.add(new EdgeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
         /*
          * Create a sampler that generates sampling chains with which it will
          * trigger weight updates during training.
@@ -264,7 +273,7 @@ public class Pipeline {
         List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
 
         /*
          * Create the scorer object that computes a score from the factors'
@@ -284,7 +293,7 @@ public class Pipeline {
          */
         List<Explorer<State>> explorers = new ArrayList<>();
 //        explorers.add(new SingleNodeExplorer(semanticTypes, frequentWordsToExclude, validPOSTags));
-        explorers.add(new DependentNodeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
+        explorers.add(new SlotExplorer(semanticTypes, specialSemanticTypes, validPOSTags, frequentWordsToExclude, wordsWithSpecialSemanticTypes));
         /*
          * Create a sampler that generates sampling chains with which it will
          * trigger weight updates during training.
@@ -353,9 +362,18 @@ public class Pipeline {
         //hybrid training procedure, switches every epoch to another scoring method {objective or model}
         trainer.addEpochCallback(new QAHybridSamplingStrategyCallback(sampler, BEAM_SIZE_QA_TRAINING));
 
+        //set objective scores to 0
+        for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : nelInstances) {
+
+            for (State state : triple.getStates()) {
+
+                state.setObjectiveScore(0);
+                state.setModelScore(1.0);
+            }
+        }
+
         //train the model
         List<SampledMultipleInstance<AnnotatedDocument, String, State>> finalStates = trainer.specialTrain(sampler, nelInstances, learner, BEAM_SIZE_QA_TRAINING);
-
 
         System.out.println("\nQA Model :\n" + model.toDetailedString());
 
@@ -385,12 +403,12 @@ public class Pipeline {
         List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
 
         /*
          * initialize QATemplateFactory
          */
-        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes);
+        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
 
         /*
          * Create an Initializer that is responsible for providing an initial
@@ -406,7 +424,7 @@ public class Pipeline {
          */
         List<Explorer<State>> explorers = new ArrayList<>();
 //        explorers.add(new SingleNodeExplorer(semanticTypes, frequentWordsToExclude, validPOSTags));
-        explorers.add(new DependentNodeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
+        explorers.add(new EdgeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
         /*
          * Create a sampler that generates sampling chains with which it will
          * trigger weight updates during training.
@@ -465,10 +483,9 @@ public class Pipeline {
          */
 
 //        Performance.logTest(testResults, objective);
-        
         return testResults;
     }
-    
+
     private static List<SampledMultipleInstance<AnnotatedDocument, String, State>> testQA(Model<AnnotatedDocument, State> model, List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances) {
         /*
          * Setup all necessary components for training and testing.
@@ -485,14 +502,12 @@ public class Pipeline {
         List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
 
         /*
          * initialize QATemplateFactory
          */
-        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes);
-
-
+        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
 
         /*
          * Define the explorers that will provide "neighboring" states given a
@@ -501,7 +516,7 @@ public class Pipeline {
          */
         List<Explorer<State>> explorers = new ArrayList<>();
 //        explorers.add(new SingleNodeExplorer(semanticTypes, frequentWordsToExclude, validPOSTags));
-        explorers.add(new DependentNodeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
+        explorers.add(new EdgeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
         /*
          * Create a sampler that generates sampling chains with which it will
          * trigger weight updates during training.

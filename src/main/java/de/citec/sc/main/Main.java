@@ -41,23 +41,23 @@ public class Main {
 
             args = new String[20];
             args[0] = "-d1";//query dataset
-            args[1] = "qaldSubset";//qald6Train  qald6Test   qaldSubset
+            args[1] = "qald6Train";//qald6Train  qald6Test   qaldSubset
             args[2] = "-d2";  //test dataset
-            args[3] = "qaldSubset";//qald6Train  qald6Test   qaldSubset
+            args[3] = "qald6Train";//qald6Train  qald6Test   qaldSubset
             args[4] = "-m1";//manual lexicon
             args[5] = "true";//true, false
             args[6] = "-m2";//matoll
             args[7] = "true";//true, false
             args[8] = "-e";//epochs
-            args[9] = "" + 1;
+            args[9] = "" + 2;
             args[10] = "-s";//sampling steps
             args[11] = "" + 15;
             args[12] = "-k";//top k samples to select from during training
-            args[13] = "" + 20;
+            args[13] = "" + 1;
             args[14] = "-l";//top k samples to select from during testing
-            args[15] = "" + 5;
+            args[15] = "" + 10;
             args[16] = "-w";//max word count
-            args[17] = "" + 30;
+            args[17] = "" + 3;
             args[18] = "-t";//task name
             args[19] = "linking";//qa, linking
         }
@@ -150,7 +150,7 @@ public class Main {
         wordsWithSpecialSemanticTypes.add("when");
         wordsWithSpecialSemanticTypes.add("where");
 
-        Pipeline.initialize(validPOSTags, semanticTypes, specialSemanticTypes, frequentWordsToExclude);
+        Pipeline.initialize(validPOSTags, semanticTypes, specialSemanticTypes, frequentWordsToExclude, wordsWithSpecialSemanticTypes);
         
         QueryConstructor.initialize(specialSemanticTypes, semanticTypes, validPOSTags, frequentWordsToExclude);
     }
