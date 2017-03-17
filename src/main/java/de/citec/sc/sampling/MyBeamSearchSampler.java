@@ -38,12 +38,12 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
         
         default <InstanceT, StateT extends AbstractState<InstanceT>> void onStartStep(
                 MyBeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
-                StateT initialState) {
+                List<StateT> initialStates) {
         }
         
         default <InstanceT, StateT extends AbstractState<InstanceT>> void onEndStep(
                 MyBeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
-                StateT initialState, List<StateT> currentState) {
+                List<StateT> initialStates, List<StateT> currentState) {
             
         }
     }
@@ -114,12 +114,12 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
     }
     
     @Override
-    public List<List<StateT>> generateChain(StateT initialState, ResultT goldResult, Learner<StateT> learner) {
+    public List<List<StateT>> generateChain(List<StateT> initialStates, ResultT goldResult, Learner<StateT> learner) {
         List<List<StateT>> generatedChain = new ArrayList<>();
         
         List<StateT> currentStates = new ArrayList<>();
         
-        currentStates.add(initialState);
+        currentStates.addAll(initialStates);
         int step = 0;
         do {
             log.info("---------------------------");
@@ -129,7 +129,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
                 log.info("TRAINING Step: %s; Explorer: %s", step + 1, explorer.getClass().getSimpleName());
                 log.info("Current states : %s", currentStates.size());
                 for (StepCallback c : stepCallbacks) {
-                    c.onStartStep(this, step, e, explorers.size(), initialState);
+                    c.onStartStep(this, step, e, explorers.size(), initialStates);
                 }
                 
                 if (step % stepsBetweenTraining == 0) {
@@ -141,7 +141,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
                 generatedChain.add(currentStates);
                 
                 for (StepCallback c : stepCallbacks) {
-                    c.onEndStep(this, step, e, explorers.size(), initialState, currentStates);
+                    c.onEndStep(this, step, e, explorers.size(), initialStates, currentStates);
                 }
                 e++;
             }
@@ -169,11 +169,11 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
     }
     
     @Override
-    public List<List<StateT>> generateChain(StateT initialState) {
+    public List<List<StateT>> generateChain(List<StateT> initialStates) {
         
         List<List<StateT>> generatedChain = new ArrayList<>();
         List<StateT> currentStates = new ArrayList<>();
-        currentStates.add(initialState);
+        currentStates.addAll(initialStates);
         
         int step = 0;
         do {
@@ -183,7 +183,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
                 log.info("...............");
                 log.info("PREDICTION Step: %s; Explorer: %s", step + 1, explorer.getClass().getSimpleName());
                 for (StepCallback c : stepCallbacks) {
-                    c.onStartStep(this, step, e, explorers.size(), initialState);
+                    c.onStartStep(this, step, e, explorers.size(), initialStates);
                 }
                 currentStates = performPredictionStep(explorer, currentStates);
                 
@@ -192,7 +192,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
                 generatedChain.add(currentStates);
                 
                 for (StepCallback c : stepCallbacks) {
-                    c.onEndStep(this, step, e, explorers.size(), initialState, currentStates);
+                    c.onEndStep(this, step, e, explorers.size(), initialStates, currentStates);
                 }
                 e++;
             }

@@ -1,5 +1,6 @@
 package de.citec.sc.main;
 
+import corpus.SampledInstance;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,9 +9,12 @@ import org.apache.logging.log4j.Logger;
 
 import de.citec.sc.corpus.AnnotatedDocument;
 import de.citec.sc.corpus.SampledMultipleInstance;
-import de.citec.sc.learning.LinkingObjectiveFunction;
+import de.citec.sc.learning.NELObjectiveFunction;
 import de.citec.sc.learning.NELHybridSamplingStrategyCallback;
 import de.citec.sc.learning.NELTrainer;
+import de.citec.sc.learning.QAHybridSamplingStrategyCallback;
+import de.citec.sc.learning.QAObjectiveFunction;
+import de.citec.sc.learning.QATrainer;
 import de.citec.sc.sampling.DependentNodeExplorer;
 import de.citec.sc.sampling.MyBeamSearchSampler;
 import de.citec.sc.sampling.SingleNodeExplorer;
@@ -21,6 +25,7 @@ import de.citec.sc.utils.Performance;
 import de.citec.sc.utils.ProjectConfiguration;
 import de.citec.sc.variable.State;
 import exceptions.UnkownTemplateRequestedException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -45,8 +50,10 @@ public class Pipeline {
 
     private static int NUMBER_OF_SAMPLING_STEPS = 15;
     private static int NUMBER_OF_EPOCHS = 6;
-    private static int BEAM_SIZE_TRAINING = 20;
-    private static int BEAM_SIZE_TEST = 500;
+    private static int BEAM_SIZE_NEL_TRAINING = 20;
+    private static int BEAM_SIZE_QA_TRAINING = 5;
+    private static int BEAM_SIZE_QA_TEST = 5;
+    private static int BEAM_SIZE_NEL_TEST = 20;
     private static Logger log = LogManager.getFormatterLogger();
 
     private static Set<String> validPOSTags;
@@ -62,19 +69,69 @@ public class Pipeline {
 
         NUMBER_OF_SAMPLING_STEPS = ProjectConfiguration.getNumberOfSamplingSteps();
         NUMBER_OF_EPOCHS = ProjectConfiguration.getNumberOfEpochs();
-        BEAM_SIZE_TRAINING = ProjectConfiguration.getTrainingBeamSize();
-        BEAM_SIZE_TEST = ProjectConfiguration.getTestBeamSize();
+        BEAM_SIZE_NEL_TRAINING = ProjectConfiguration.getTrainingBeamSize();
+        BEAM_SIZE_QA_TRAINING = ProjectConfiguration.getTrainingBeamSize();
+        BEAM_SIZE_QA_TEST = ProjectConfiguration.getTestBeamSize();
+        BEAM_SIZE_NEL_TEST = ProjectConfiguration.getTestBeamSize();
 
     }
 
-    public static Model<AnnotatedDocument, State> train(List<AnnotatedDocument> trainingDocuments) {
+    public static List<Model<AnnotatedDocument, State>> train(List<AnnotatedDocument> trainingDocuments) {
+        
+        Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> nelPair = trainNEL(trainingDocuments);
+
+        Model<AnnotatedDocument, State> nelModel = null;
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelStates = null;
+        
+        Model<AnnotatedDocument, State> qaModel = null;
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> qaStates = null;
+        
+
+        for (Model<AnnotatedDocument, State> m : nelPair.keySet()) {
+            nelModel = m;
+            nelStates = nelPair.get(m);
+        }
+
+        Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> qaPair = trainQA(nelStates);
+        
+        for (Model<AnnotatedDocument, State> m : qaPair.keySet()) {
+            qaModel = m;
+            qaStates = nelPair.get(m);
+        }
+        
+        List<Model<AnnotatedDocument, State>> models = new ArrayList<>();
+        models.add(nelModel);
+        models.add(qaModel);
+        
+        return models;
+    }
+    public static void test(List<Model<AnnotatedDocument, State>> models, List<AnnotatedDocument> testDocuments) {
+        
+        Model<AnnotatedDocument, State> nelModel = models.get(0);
+        Model<AnnotatedDocument, State> qaModel = models.get(1);
+        
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances = testNEL(nelModel, testDocuments);
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> qaInstances = testQA(nelModel, nelInstances);
+        
+        NELObjectiveFunction nelObjectiveFunction = new NELObjectiveFunction();
+        QAObjectiveFunction qaObjectiveFunction = new QAObjectiveFunction();
+        
+        //test results for linking task
+        Performance.logTest(nelInstances, nelObjectiveFunction);
+        
+        //test results for qa task
+        Performance.logTest(qaInstances, qaObjectiveFunction);
+        
+    }
+
+    private static Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> trainNEL(List<AnnotatedDocument> trainingDocuments) {
         /*
          * Setup all necessary components for training and testing.
          */
         /*
          * Define an objective function that guides the training procedure.
          */
-        ObjectiveFunction<State, String> objective = new LinkingObjectiveFunction();
+        ObjectiveFunction<State, String> objective = new NELObjectiveFunction();
 
         /*
          * Define templates that are responsible to generate factors/features to
@@ -151,9 +208,128 @@ public class Pipeline {
         /*
          * 
          */
+        MyBeamSearchSampler<AnnotatedDocument, State, String> nelSampler = new MyBeamSearchSampler<>(model, objective, explorers,
+                scoreStoppingCriterion);
+        nelSampler.setTrainSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_NEL_TRAINING, s -> s.getObjectiveScore()));
+        nelSampler.setTrainAcceptStrategy(AcceptStrategies.strictObjectiveAccept());
+
+//        MySampler<AnnotatedDocument, State, String> sampler = new MySampler<>(model, objective, explorers,
+//                stoppingCriterion);
+//        sampler.setTrainingSamplingStrategy(SamplingStrategies.greedyObjectiveStrategy());
+//        sampler.setTrainingAcceptStrategy(AcceptStrategies.objectiveAccept());
+        /*
+         * Define a learning strategy. The learner will receive state pairs
+         * which can be used to update the models parameters.
+         */
+        Learner<State> learner = new AdvancedLearner<>(model, new SGD());
+
+        log.info("####################");
+        log.info("Start training");
+
+        /*
+         * The trainer will loop over the data and invoke sampling and learning.
+         * Additionally, it can invoke predictions on new data.
+         */
+        NELTrainer neltrainer = new NELTrainer();
+        //hybrid training procedure, switches every epoch to another scoring method {objective or model}
+        neltrainer.addEpochCallback(new NELHybridSamplingStrategyCallback(nelSampler, BEAM_SIZE_NEL_TRAINING));
+
+        //train the model
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> trainResults = neltrainer.train(nelSampler, initializer, learner, trainingDocuments, i -> i.getGoldQueryString(), NUMBER_OF_EPOCHS);
+
+        System.out.println("\nNEL Model :\n" + model.toDetailedString());
+
+        //log the parsing coverage
+        Performance.logTrain();
+
+        Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> pair = new HashMap<>();
+        pair.put(model, trainResults);
+
+        return pair;
+    }
+
+    private static Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> trainQA(List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances) {
+        /*
+         * Setup all necessary components for training and testing.
+         */
+        /*
+         * Define an objective function that guides the training procedure.
+         */
+        ObjectiveFunction<State, String> objective = new QAObjectiveFunction();
+
+        /*
+         * Define templates that are responsible to generate factors/features to
+         * score generated states.
+         */
+        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
+//        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
+//        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
+        templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+
+        /*
+         * Create the scorer object that computes a score from the factors'
+         * features and the templates' weight vectors.
+         */
+        Scorer scorer = new DefaultScorer();
+        /*
+         * Define a model and provide it with the necessary templates.
+         */
+        Model<AnnotatedDocument, State> model = new Model<>(scorer, templates);
+
+
+        /*
+         * Define the explorers that will provide "neighboring" states given a
+         * starting state. The sampler will select one of these states as a
+         * successor state and, thus, perform the sampling procedure.
+         */
+        List<Explorer<State>> explorers = new ArrayList<>();
+//        explorers.add(new SingleNodeExplorer(semanticTypes, frequentWordsToExclude, validPOSTags));
+        explorers.add(new DependentNodeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
+        /*
+         * Create a sampler that generates sampling chains with which it will
+         * trigger weight updates during training.
+         */
+
+        /*
+         * Stopping criterion for the sampling process. If you set this value
+         * too small, the sampler can not reach the optimal solution. Large
+         * values, however, increase computation time.
+         */
+        BeamSearchStoppingCriterion<State> scoreStoppingCriterion = new BeamSearchStoppingCriterion<State>() {
+
+            @Override
+            public boolean checkCondition(List<List<State>> chain, int step) {
+
+                List<State> lastStates = chain.get(chain.size() - 1);
+                State s = (State) lastStates.get(lastStates.size() - 1);
+
+                double maxScore = s.getObjectiveScore();
+
+                if (maxScore == 1.0) {
+                    return true;
+                }
+
+                int count = 0;
+                final int maxCount = 4;
+
+                for (int i = chain.size() - 1; i >= 0; i--) {
+                    List<State> chainStates = chain.get(i);
+                    State maxState = (State) chainStates.get(chainStates.size() - 1);
+
+                    if (maxState.getObjectiveScore() >= maxScore) {
+                        count++;
+                    }
+                }
+                return count >= maxCount || chain.size() >= NUMBER_OF_SAMPLING_STEPS;
+            }
+        };
+
+        /*
+         * 
+         */
         MyBeamSearchSampler<AnnotatedDocument, State, String> sampler = new MyBeamSearchSampler<>(model, objective, explorers,
                 scoreStoppingCriterion);
-        sampler.setTrainSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_TRAINING, s -> s.getObjectiveScore()));
+        sampler.setTrainSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_QA_TRAINING, s -> s.getObjectiveScore()));
         sampler.setTrainAcceptStrategy(AcceptStrategies.strictObjectiveAccept());
 
 //        MySampler<AnnotatedDocument, State, String> sampler = new MySampler<>(model, objective, explorers,
@@ -173,29 +349,34 @@ public class Pipeline {
          * The trainer will loop over the data and invoke sampling and learning.
          * Additionally, it can invoke predictions on new data.
          */
-        NELTrainer trainer = new NELTrainer();
+        QATrainer trainer = new QATrainer();
         //hybrid training procedure, switches every epoch to another scoring method {objective or model}
-        trainer.addEpochCallback(new NELHybridSamplingStrategyCallback(sampler, BEAM_SIZE_TRAINING));
+        trainer.addEpochCallback(new QAHybridSamplingStrategyCallback(sampler, BEAM_SIZE_QA_TRAINING));
 
         //train the model
-        List<SampledMultipleInstance<AnnotatedDocument, String, State>> trainResults = trainer.train(sampler, initializer, learner, trainingDocuments, i -> i.getGoldQueryString(), NUMBER_OF_EPOCHS);
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> finalStates = trainer.specialTrain(sampler, nelInstances, learner, BEAM_SIZE_QA_TRAINING);
 
-        System.out.println(model.toDetailedString());
+
+        System.out.println("\nQA Model :\n" + model.toDetailedString());
 
         //log the parsing coverage
         Performance.logTrain();
 
-        return model;
+        Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> pair = new HashMap<>();
+        pair.put(model, finalStates);
+
+        return pair;
+
     }
 
-    public static void test(Model<AnnotatedDocument, State> model, List<AnnotatedDocument> testDocuments) {
+    private static List<SampledMultipleInstance<AnnotatedDocument, String, State>> testNEL(Model<AnnotatedDocument, State> model, List<AnnotatedDocument> testDocuments) {
         /*
          * Setup all necessary components for training and testing.
          */
         /*
          * Define an objective function that guides the training procedure.
          */
-        ObjectiveFunction<State, String> objective = new LinkingObjectiveFunction();
+        ObjectiveFunction<State, String> objective = new NELObjectiveFunction();
 
         /*
          * Define templates that are responsible to generate factors/features to
@@ -246,7 +427,6 @@ public class Pipeline {
 
                 double maxScore = s.getModelScore();
 
-
                 int count = 0;
                 final int maxCount = 4;
 
@@ -254,7 +434,7 @@ public class Pipeline {
                     List<State> chainStates = chain.get(i);
                     State maxState = (State) chainStates.get(chainStates.size() - 1);
 
-                    if (maxState.getModelScore()>= maxScore) {
+                    if (maxState.getModelScore() >= maxScore) {
                         count++;
                     }
                 }
@@ -267,7 +447,7 @@ public class Pipeline {
          */
         MyBeamSearchSampler<AnnotatedDocument, State, String> sampler = new MyBeamSearchSampler<>(model, objective, explorers,
                 scoreStoppingCriterion);
-        sampler.setTestSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByModel(BEAM_SIZE_TEST, s -> s.getModelScore()));
+        sampler.setTestSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByModel(BEAM_SIZE_NEL_TEST, s -> s.getModelScore()));
         sampler.setTestAcceptStrategy(AcceptStrategies.strictModelAccept());
 
         log.info("####################");
@@ -284,102 +464,139 @@ public class Pipeline {
          * predictions, we do that here, manually, before we print the results.
          */
 
-        Performance.logTest(testResults, objective);
-
-//        double overAllScore = 0;
-//        String testPrint = "HERE IS THE START OF PRINT";
-//        int c = 0;
-//        for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
-//
-//            double maxScore = 0;
-//            State maxState = null;
-//            for (State state : triple.getStates()) {
-//                double s = objective.score(state, triple.getGoldResult());
-//
-//                if (maxState == null) {
-//                    maxState = state;
-//                }
-//
-//                if (s > maxScore) {
-//                    maxScore = s;
-//                    maxState = state;
-//                }
-//
-//            }
-//
-////            testPrint += maxState + "\nScore: " + maxScore + "\n========================================================================\n";
-//
-//            overAllScore += maxScore;
-//            
-//            if(maxScore == 1.0){
-//                c ++;
-//            }
-//            else{
-//                testPrint += maxState + "\nScore: " + maxScore + "\n========================================================================\n";
-//            }
-//        }
-//
-//        double MACROF1 = overAllScore / (double) testResults.size();
-//
-//        testPrint += "\nTest results : " + MACROF1 + " Instances with 1.0: "+ c;
-//
-//        System.out.println(testPrint);
-//        log.info(testPrint);
-        /*
-         * Now, that the predicted states have there objective score computed
-         * and set to their internal variable, we can print the prediction
-         * outcome.
-         */
-//        log.info("Test results:");
-//        EvaluationUtil
-//                .printPredictionPerformance(testResults.stream().map(t -> t.getState()).collect(Collectors.toList()));
-//        /*
-//         * Finally, print the models weights.
-//         */
-//        log.debug("Model weights:");
-//        EvaluationUtil.printWeights(model, -1);
-//
-//        //evaluator
-//        Map<String, Double> scores = ResultEvaluator.evaluateAllByObjective(testResults, objective);
-//        System.out.println("Evaluation : \t" + scores);
-    }
-
-    public static void test(String pathToModel, List<AnnotatedDocument> testDocuments) {
+//        Performance.logTest(testResults, objective);
         
+        return testResults;
+    }
+    
+    private static List<SampledMultipleInstance<AnnotatedDocument, String, State>> testQA(Model<AnnotatedDocument, State> model, List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances) {
+        /*
+         * Setup all necessary components for training and testing.
+         */
+        /*
+         * Define an objective function that guides the training procedure.
+         */
+        ObjectiveFunction<State, String> objective = new QAObjectiveFunction();
 
+        /*
+         * Define templates that are responsible to generate factors/features to
+         * score generated states.
+         */
         List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
         templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
 
         /*
-         * Create the scorer object that computes a score from the factors'
-         * features and the templates' weight vectors.
-         */
-        Scorer scorer = new DefaultScorer();
-        /*
-         * Define a model and provide it with the necessary templates.
-         */
-        Model<AnnotatedDocument, State> model = new Model<>(scorer, templates);
-
-        /*
          * initialize QATemplateFactory
          */
         QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes);
 
-        QATemplateFactory f = new QATemplateFactory();
 
-        try {
-            model.loadModelFromDir(pathToModel, f);
 
-            test(model, testDocuments);
+        /*
+         * Define the explorers that will provide "neighboring" states given a
+         * starting state. The sampler will select one of these states as a
+         * successor state and, thus, perform the sampling procedure.
+         */
+        List<Explorer<State>> explorers = new ArrayList<>();
+//        explorers.add(new SingleNodeExplorer(semanticTypes, frequentWordsToExclude, validPOSTags));
+        explorers.add(new DependentNodeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
+        /*
+         * Create a sampler that generates sampling chains with which it will
+         * trigger weight updates during training.
+         */
 
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnkownTemplateRequestedException ex) {
-            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (Exception ex) {
-            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        /*
+         * Stopping criterion for the sampling process. If you set this value
+         * too small, the sampler can not reach the optimal solution. Large
+         * values, however, increase computation time.
+         */
+        BeamSearchStoppingCriterion<State> scoreStoppingCriterion = new BeamSearchStoppingCriterion<State>() {
+
+            @Override
+            public boolean checkCondition(List<List<State>> chain, int step) {
+
+                List<State> lastStates = chain.get(chain.size() - 1);
+                State s = (State) lastStates.get(lastStates.size() - 1);
+
+                double maxScore = s.getModelScore();
+
+                int count = 0;
+                final int maxCount = 4;
+
+                for (int i = chain.size() - 1; i >= 0; i--) {
+                    List<State> chainStates = chain.get(i);
+                    State maxState = (State) chainStates.get(chainStates.size() - 1);
+
+                    if (maxState.getModelScore() >= maxScore) {
+                        count++;
+                    }
+                }
+                return count >= maxCount || chain.size() >= NUMBER_OF_SAMPLING_STEPS;
+            }
+        };
+
+        /*
+         * 
+         */
+        MyBeamSearchSampler<AnnotatedDocument, State, String> sampler = new MyBeamSearchSampler<>(model, objective, explorers,
+                scoreStoppingCriterion);
+        sampler.setTestSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByModel(BEAM_SIZE_QA_TEST, s -> s.getModelScore()));
+        sampler.setTestAcceptStrategy(AcceptStrategies.strictModelAccept());
+
+        log.info("####################");
+        log.info("Start testing");
+
+        /*
+         * The trainer will loop over the data and invoke sampling.
+         */
+        QATrainer trainer = new QATrainer();
+
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults = trainer.specialTest(sampler, nelInstances);
+        /*
+         * Since the test function does not compute the objective score of its
+         * predictions, we do that here, manually, before we print the results.
+         */
+
+        return testResults;
     }
+
+//    public static void test(String pathToModel, List<AnnotatedDocument> testDocuments) {
+//
+//        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
+////        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
+////        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
+//        templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+//
+//        /*
+//         * Create the scorer object that computes a score from the factors'
+//         * features and the templates' weight vectors.
+//         */
+//        Scorer scorer = new DefaultScorer();
+//        /*
+//         * Define a model and provide it with the necessary templates.
+//         */
+//        Model<AnnotatedDocument, State> model = new Model<>(scorer, templates);
+//
+//        /*
+//         * initialize QATemplateFactory
+//         */
+//        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes);
+//
+//        QATemplateFactory f = new QATemplateFactory();
+//
+//        try {
+//            model.loadModelFromDir(pathToModel, f);
+//
+//            test(model, testDocuments);
+//
+//        } catch (ClassNotFoundException ex) {
+//            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
+//        } catch (UnkownTemplateRequestedException ex) {
+//            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
+//        } catch (Exception ex) {
+//            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
 }

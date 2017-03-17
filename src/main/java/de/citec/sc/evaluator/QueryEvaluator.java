@@ -21,14 +21,9 @@ import java.util.List;
  * @author sherzod
  */
 public class QueryEvaluator {
-
-    private static MappingGenerator mappingGenerator;
     
     public static double evaluate(String derived, String goldStandard) {
-        
-        if(mappingGenerator == null){
-            mappingGenerator = new MappingGenerator();
-        }
+
         
         List<Triple> constructedTriples = SPARQLParser.extractTriplesFromQuery(derived);
 
@@ -85,7 +80,7 @@ public class QueryEvaluator {
         }
 
         //get mappings
-        List<HashMap<Term, Term>> mappings = mappingGenerator.generateMappings(triplesWithoutReturnVar, goldSetWithoutReturnVar);
+        List<HashMap<Term, Term>> mappings = MappingGenerator.generateMappings(triplesWithoutReturnVar, goldSetWithoutReturnVar);
 
         if (mappings.isEmpty()) {
             //add empty mapping to run the process

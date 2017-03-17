@@ -13,6 +13,7 @@ import de.citec.sc.query.Search;
 import de.citec.sc.template.QATemplateFactory;
 import de.citec.sc.utils.DBpediaEndpoint;
 import de.citec.sc.utils.ProjectConfiguration;
+import de.citec.sc.variable.State;
 import de.citec.sc.wordNet.WordNetAnalyzer;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ public class Main {
             args[10] = "-s";//sampling steps
             args[11] = "" + 15;
             args[12] = "-k";//top k samples to select from during training
-            args[13] = "" + 1;
+            args[13] = "" + 20;
             args[14] = "-l";//top k samples to select from during testing
             args[15] = "" + 5;
             args[16] = "-w";//max word count
@@ -72,10 +73,11 @@ public class Main {
 
         //train and test model
         try {
-            Model trainedModel = Pipeline.train(trainDocuments);
+            List<Model<AnnotatedDocument, State>> trainedModels = Pipeline.train(trainDocuments);
+
 
 //            trainedModel.saveModelToFile("models", "model");
-//            Pipeline.test(trainedModel, testDocuments);
+            Pipeline.test(trainedModels, testDocuments);
 //            Pipeline.test("models/model", trainDocuments);
         } catch (Exception ex) {
             java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);

@@ -8,7 +8,7 @@ package de.citec.sc.evaluator;
 import com.google.common.collect.Sets;
 import corpus.SampledInstance;
 import de.citec.sc.corpus.AnnotatedDocument;
-import de.citec.sc.learning.LinkingObjectiveFunction;
+import de.citec.sc.learning.NELObjectiveFunction;
 import de.citec.sc.variable.State;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +42,7 @@ public class ResultEvaluator {
     public static Map<String, Double> evaluateAllByObjective(List<SampledInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction<State, String> f) {
         Map<String, Double> map = new HashMap<>();
 
-        LinkingObjectiveFunction function = (LinkingObjectiveFunction) f;
+        NELObjectiveFunction function = (NELObjectiveFunction) f;
         double score = 0.0;
 
         log.info("========================================================================");

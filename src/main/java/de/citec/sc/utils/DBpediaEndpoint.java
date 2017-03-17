@@ -115,6 +115,9 @@ public class DBpediaEndpoint {
             property = headURI;
 
             query = "SELECT DISTINCT ?s WHERE { ?s <" + property + "> ?o. ?o <" + classPropertyPart + "> <" + classResourcePart + ">. }";
+        } else if (isResource(depURI) && isResource(headURI)) {
+
+            query = "SELECT DISTINCT ?s WHERE { ?s1 ?p1 <" + depURI + ">. ?s2 ?p2 <" + headURI + ">. }";
         }
 
         boolean isObject = DBpediaEndpoint.isValidQuery(query, true);
@@ -157,6 +160,10 @@ public class DBpediaEndpoint {
             resource = depURI;
 
             query = "SELECT DISTINCT ?o WHERE { <" + resource + "> ?p ?o. ?o <" + classPropertyPart + "> <" + classResourcePart + ">. }";
+            
+            query = "SELECT DISTINCT ?o WHERE { <" + resource + "> <" + classPropertyPart + "> <" + classResourcePart + ">. }";
+            
+            
         } else if (isClass(depURI) && isResource(headURI)) {
             classPropertyPart = depURI.substring(0, depURI.indexOf("###"));
             classResourcePart = depURI.replace(classPropertyPart + "###", "");
@@ -186,6 +193,9 @@ public class DBpediaEndpoint {
             String classResourcePart2 = headURI.replace(classPropertyPart2 + "###", "");
 
             query = "SELECT DISTINCT ?s WHERE { ?s <" + classPropertyPart + "> <" + classResourcePart + ">. ?s <" + classPropertyPart2 + "> <" + classResourcePart2 + ">. }";
+        } else if (isResource(depURI) && isResource(headURI)) {
+
+            query = "SELECT DISTINCT ?s WHERE { <" + depURI + "> ?p1 ?o1. <" + headURI + "> ?p2 ?o2. }";
         }
 
         boolean isSubject = DBpediaEndpoint.isValidQuery(query, true);

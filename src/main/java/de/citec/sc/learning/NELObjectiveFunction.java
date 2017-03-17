@@ -21,7 +21,7 @@ import learning.ObjectiveFunction;
  *
  * @author sherzod
  */
-public class LinkingObjectiveFunction extends ObjectiveFunction<State, String> implements Serializable {
+public class NELObjectiveFunction extends ObjectiveFunction<State, String> implements Serializable {
 
 
     public double computeValue(State deptState, String goldState) {

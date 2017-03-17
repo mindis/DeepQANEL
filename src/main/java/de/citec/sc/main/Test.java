@@ -5,7 +5,7 @@ import de.citec.sc.corpus.AnnotatedDocument;
 import de.citec.sc.evaluator.BagOfLinksEvaluator;
 import de.citec.sc.evaluator.ResultEvaluator;
 
-import de.citec.sc.learning.LinkingObjectiveFunction;
+import de.citec.sc.learning.NELObjectiveFunction;
 import de.citec.sc.qald.QALDCorpusLoader;
 import de.citec.sc.query.CandidateRetriever;
 import de.citec.sc.query.CandidateRetrieverOnLucene;

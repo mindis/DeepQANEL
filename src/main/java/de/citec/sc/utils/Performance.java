@@ -7,7 +7,7 @@ package de.citec.sc.utils;
 
 import de.citec.sc.corpus.AnnotatedDocument;
 import de.citec.sc.corpus.SampledMultipleInstance;
-import de.citec.sc.learning.LinkingObjectiveFunction;
+import de.citec.sc.learning.NELObjectiveFunction;
 import de.citec.sc.variable.HiddenVariable;
 import de.citec.sc.variable.State;
 import java.io.File;

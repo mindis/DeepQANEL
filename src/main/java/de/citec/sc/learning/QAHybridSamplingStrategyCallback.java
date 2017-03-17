@@ -3,15 +3,16 @@ package de.citec.sc.learning;
 
 
 import de.citec.sc.learning.QATrainer.EpochCallback;
+import de.citec.sc.sampling.MyBeamSearchSampler;
 import sampling.BeamSearchSampler;
 import sampling.samplingstrategies.BeamSearchSamplingStrategies;
 import variables.AbstractState;
 
 public class QAHybridSamplingStrategyCallback<StateT extends AbstractState<?>> implements EpochCallback {
-	private BeamSearchSampler<?, StateT, ?> sampler;
+	private MyBeamSearchSampler<?, StateT, ?> sampler;
 	private int beamSize = 10;
 
-	public QAHybridSamplingStrategyCallback(BeamSearchSampler<?, StateT, ?> sampler, int beamSize) {
+	public QAHybridSamplingStrategyCallback(MyBeamSearchSampler<?, StateT, ?> sampler, int beamSize) {
 		super();
 		this.sampler = sampler;
 		this.beamSize = beamSize;
