@@ -33,17 +33,20 @@ public class QueryConstructor {
     private static Map<Integer, String> specialSemanticTypes;
     private static Set<String> validPOSTags;
     private static Set<String> frequentWordsToExclude;
+    private static Set<String> wordsWithSpecialSemanticTypes;
     private static ExpressionFactory expressions;
 
-    public static void initialize(Map<Integer, String> sp, Map<Integer, String> s, Set<String> v, Set<String> f) {
+    public static void initialize(Map<Integer, String> sp, Map<Integer, String> s, Set<String> v, Set<String> f, Set<String> w) {
 
         specialSemanticTypes = sp;
-        
+
         semanticTypes = s;
-        
+
         validPOSTags = v;
 
         frequentWordsToExclude = f;
+        
+        wordsWithSpecialSemanticTypes = w;
 
         expressions = new ExpressionFactory();
     }
@@ -64,9 +67,9 @@ public class QueryConstructor {
             //instantiate DUDES with URIs
             HashMap<Integer, RDFDUDES> instantiatedDUDES = instantiateDUDES(state);
 
-            RDFDUDES headDUDE = SemanticComposition.compose(state, instantiatedDUDES, validPOSTags, frequentWordsToExclude);
-            
-            if(headDUDE == null){
+            RDFDUDES headDUDE = SemanticComposition.compose(state, instantiatedDUDES, validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes, wordsWithSpecialSemanticTypes);
+
+            if (headDUDE == null) {
                 return "";
             }
 
@@ -79,16 +82,19 @@ public class QueryConstructor {
             if (questionString.startsWith("Did") || questionString.startsWith("Does") || questionString.startsWith("Do") || questionString.startsWith("Is") || questionString.startsWith("Were") || questionString.startsWith("Was") || questionString.startsWith("Are")) {
                 isSELECTQuery = false;
             }
-            
+
             boolean hasReturnVariable = false;
-            for(Integer i : state.getHiddenVariables().keySet()){
-                if(specialSemanticTypes.containsKey(state.getHiddenVariables().get(i).getDudeId())){
-                    hasReturnVariable = true;
-                     break;
+            for (Integer i : state.getHiddenVariables().keySet()) {
+                if (specialSemanticTypes.containsKey(state.getHiddenVariables().get(i).getDudeId())) {
+                    //check if any slot has this dep node
+//                    if (state.getSlotVariables().containsKey(i)) {
+                        hasReturnVariable = true;
+                        break;
+//                    }
                 }
             }
-            
-//            isSELECTQuery = hasReturnVariable;
+
+            isSELECTQuery = hasReturnVariable;
 
             query = headDUDE.convertToSPARQL(isSELECTQuery).toString();
 
@@ -189,7 +195,7 @@ public class QueryConstructor {
                     instantiatedDudes.put(nodeIndex, someClass);
                     break;
                 case "RestrictionClass":
-                    RDFDUDES someRestrictionClass = new RDFDUDES(RDFDUDES.Type.CLASS);
+                    RDFDUDES someRestrictionClass = new RDFDUDES(RDFDUDES.Type.CLASS, "1");
 
                     if (uri.contains("###")) {
                         String classURI = uri.substring(0, uri.indexOf("###"));

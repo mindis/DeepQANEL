@@ -28,9 +28,43 @@ public class Performance {
     public static HashMap<String, String> parsedQuestions = new HashMap<>();
     public static HashMap<String, String> unParsedQuestions = new HashMap<>();
 
-    public static void logTrain() {
+    public static void logNELTrain() {
 
-        String fileName = "Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+
+        //log based on word count
+        String p = parsedQuestions.size() + "/" + (parsedQuestions.size() + unParsedQuestions.size()) + "\n\n";
+        String u = unParsedQuestions.size() + "/" + (parsedQuestions.size() + unParsedQuestions.size()) + "\n\n";
+
+        for (String p1 : parsedQuestions.keySet()) {
+            p += p1 + "\n" + parsedQuestions.get(p1) + "\n\n";
+        }
+        for (String p1 : unParsedQuestions.keySet()) {
+            u += unParsedQuestions.get(p1) + "\n\n";
+        }
+
+        String parsedOutputsDirectory = "trainResult";
+
+        File theDir = new File(parsedOutputsDirectory);
+
+        if (!theDir.exists()) {
+
+            try {
+                theDir.mkdir();
+            } catch (SecurityException se) {
+                //handle it
+            }
+        }
+
+        FileFactory.writeListToFile(parsedOutputsDirectory + "/unParsedInstances_" + fileName + ".txt", u, false);
+        FileFactory.writeListToFile(parsedOutputsDirectory + "/parsedInstances_" + fileName + ".txt", p, false);
+
+        unParsedQuestions.clear();
+        parsedQuestions.clear();
+    }
+    public static void logQATrain() {
+
+        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
 
         //log based on word count
         String p = parsedQuestions.size() + "/" + (parsedQuestions.size() + unParsedQuestions.size()) + "\n\n";

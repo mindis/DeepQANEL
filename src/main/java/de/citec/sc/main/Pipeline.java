@@ -17,6 +17,7 @@ import de.citec.sc.learning.QATrainer;
 import de.citec.sc.sampling.EdgeExplorer;
 import de.citec.sc.sampling.MyBeamSearchSampler;
 import de.citec.sc.sampling.SlotExplorer;
+import de.citec.sc.sampling.SpecialSemanticsExplorer;
 import de.citec.sc.sampling.StateInitializer;
 import de.citec.sc.template.NELLexicalTemplate;
 import de.citec.sc.template.QALexicalTemplate;
@@ -27,6 +28,7 @@ import de.citec.sc.variable.State;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import learning.AdvancedLearner;
 import learning.Learner;
 import learning.Model;
@@ -69,10 +71,10 @@ public class Pipeline {
 
         NUMBER_OF_SAMPLING_STEPS = ProjectConfiguration.getNumberOfSamplingSteps();
         NUMBER_OF_EPOCHS = ProjectConfiguration.getNumberOfEpochs();
-        BEAM_SIZE_NEL_TRAINING = ProjectConfiguration.getTrainingBeamSize();
-        BEAM_SIZE_QA_TRAINING = ProjectConfiguration.getTrainingBeamSize();
-        BEAM_SIZE_QA_TEST = ProjectConfiguration.getTestBeamSize();
-        BEAM_SIZE_NEL_TEST = ProjectConfiguration.getTestBeamSize();
+        BEAM_SIZE_NEL_TRAINING = ProjectConfiguration.getNELTrainingBeamSize();
+        BEAM_SIZE_QA_TRAINING = ProjectConfiguration.getQATrainingBeamSize();
+        BEAM_SIZE_QA_TEST = ProjectConfiguration.getQATestBeamSize();
+        BEAM_SIZE_NEL_TEST = ProjectConfiguration.getNELTestBeamSize();
 
     }
 
@@ -89,6 +91,12 @@ public class Pipeline {
         for (Model<AnnotatedDocument, State> m : nelPair.keySet()) {
             nelModel = m;
             nelStates = nelPair.get(m);
+
+//            for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : nelStates) {
+//                for (State s1 : triple.getStates()) {
+//                    System.out.println(s1 + "\n=================================================\n");
+//                }
+//            }
         }
 
         Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> qaPair = trainQA(nelStates);
@@ -109,27 +117,25 @@ public class Pipeline {
 
         Model<AnnotatedDocument, State> nelModel = models.get(0);
         Model<AnnotatedDocument, State> qaModel = models.get(1);
-        
-        System.out.println("NEL Model: \n"+nelModel.toDetailedString());
-        System.out.println("QA Model: \n"+qaModel.toDetailedString());
+
+        System.out.println("NEL Model: \n" + nelModel.toDetailedString());
+        System.out.println("QA Model: \n" + qaModel.toDetailedString());
 
         NELObjectiveFunction nelObjectiveFunction = new NELObjectiveFunction();
         List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances = testNEL(nelModel, testDocuments);
-        
-        //test results for linking task
-        System.out.println("NEL task : \n\n");
-        Performance.logNELTest(nelInstances, nelObjectiveFunction);
-        
-        
-        
+
         List<SampledMultipleInstance<AnnotatedDocument, String, State>> qaInstances = testQA(qaModel, nelInstances);
 //        
         QAObjectiveFunction qaObjectiveFunction = new QAObjectiveFunction();
         qaObjectiveFunction.setUseQueryEvaluator(false);
+
+        //test results for linking task
+        System.out.println("NEL task : \n\n");
+        Performance.logNELTest(nelInstances, nelObjectiveFunction);
 //
         //test results for qa task
         System.out.println("QA task : \n\n");
-        Performance.logQATest(nelInstances, qaObjectiveFunction);
+        Performance.logQATest(qaInstances, qaObjectiveFunction);
 
     }
 
@@ -191,6 +197,9 @@ public class Pipeline {
             public boolean checkCondition(List<List<State>> chain, int step) {
 
                 List<State> lastStates = chain.get(chain.size() - 1);
+                //sort by objective
+                lastStates = lastStates.stream().sorted((s1, s2) -> Double.compare(s1.getObjectiveScore(), s2.getObjectiveScore())).collect(Collectors.toList());
+                
                 State s = (State) lastStates.get(lastStates.size() - 1);
 
                 double maxScore = s.getObjectiveScore();
@@ -249,7 +258,7 @@ public class Pipeline {
         System.out.println("\nNEL Model :\n" + model.toDetailedString());
 
         //log the parsing coverage
-        Performance.logTrain();
+        Performance.logNELTrain();
 
         Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> pair = new HashMap<>();
         pair.put(model, trainResults);
@@ -310,6 +319,8 @@ public class Pipeline {
             public boolean checkCondition(List<List<State>> chain, int step) {
 
                 List<State> lastStates = chain.get(chain.size() - 1);
+                //sort by model
+                lastStates = lastStates.stream().sorted((s1, s2) -> Double.compare(s1.getObjectiveScore(), s2.getObjectiveScore())).collect(Collectors.toList());
                 State s = (State) lastStates.get(lastStates.size() - 1);
 
                 double maxScore = s.getObjectiveScore();
@@ -373,12 +384,12 @@ public class Pipeline {
         }
 
         //train the model
-        List<SampledMultipleInstance<AnnotatedDocument, String, State>> finalStates = trainer.specialTrain(sampler, nelInstances, learner, BEAM_SIZE_QA_TRAINING);
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> finalStates = trainer.specialTrain(sampler, nelInstances, learner, NUMBER_OF_EPOCHS);
 
         System.out.println("\nQA Model :\n" + model.toDetailedString());
 
         //log the parsing coverage
-        Performance.logTrain();
+        Performance.logQATrain();
 
         Map<Model<AnnotatedDocument, State>, List<SampledMultipleInstance<AnnotatedDocument, String, State>>> pair = new HashMap<>();
         pair.put(model, finalStates);
@@ -516,7 +527,7 @@ public class Pipeline {
          */
         List<Explorer<State>> explorers = new ArrayList<>();
 //        explorers.add(new SingleNodeExplorer(semanticTypes, frequentWordsToExclude, validPOSTags));
-        explorers.add(new EdgeExplorer(semanticTypes, validPOSTags, frequentWordsToExclude));
+        explorers.add(new SlotExplorer(semanticTypes, specialSemanticTypes, validPOSTags, frequentWordsToExclude, wordsWithSpecialSemanticTypes));
         /*
          * Create a sampler that generates sampling chains with which it will
          * trigger weight updates during training.
@@ -562,6 +573,15 @@ public class Pipeline {
 
         log.info("####################");
         log.info("Start testing");
+
+        for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : nelInstances) {
+
+            for (State state : triple.getStates()) {
+
+                state.setObjectiveScore(0);
+                state.setModelScore(1.0);
+            }
+        }
 
         /*
          * The trainer will loop over the data and invoke sampling.

@@ -170,6 +170,22 @@ public class State extends AbstractState<AnnotatedDocument> {
         
         return slots;
     }
+    
+    public String getSlot(Integer depNode, Integer headNode){
+        String slot = "";
+        
+        if(slotVariables.containsKey(depNode)){
+            SlotVariable var = slotVariables.get(depNode);
+            
+            if(var.getParentTokenID() == headNode){
+                slot = var.getSlotNumber()+"";
+                
+                return slot;
+            }
+        }
+        
+        return slot;
+    }
 
 
 }

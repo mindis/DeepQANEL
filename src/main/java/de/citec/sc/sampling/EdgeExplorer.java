@@ -30,6 +30,7 @@ public class EdgeExplorer implements Explorer<State> {
     private Map<Integer, String> semanticTypes;
     private Set<String> validPOSTags;
     private Set<String> frequentWordsToExclude;
+    private static Set<String> wordsWithSpecialSemanticTypes;
 
     public EdgeExplorer(Map<Integer, String> assignedDUDES, Set<String> validPOSTags, Set<String> wordToExclude) {
         this.semanticTypes = assignedDUDES;
@@ -71,21 +72,104 @@ public class EdgeExplorer implements Explorer<State> {
                     continue;
                 }
 
-                List<Integer> depNodes = currentState.getDocument().getParse().getDependentEdges(indexOfNode, validPOSTags, frequentWordsToExclude);
-                /**
-                 * if dep nodes is empty get sibling nodes
-                 */
-                if (depNodes.isEmpty()) {
-                    int headOfHeadNodeIndex = currentState.getDocument().getParse().getParentNode(indexOfNode);
-                    String headOfHeadPOS = currentState.getDocument().getParse().getPOSTag(headOfHeadNodeIndex);
-                    String headOfHeadToken = currentState.getDocument().getParse().getToken(headOfHeadNodeIndex);
+                List<Integer> childNodes = currentState.getDocument().getParse().getDependentEdges(indexOfNode, validPOSTags, frequentWordsToExclude);
+                List<Integer> siblings = currentState.getDocument().getParse().getSiblings(indexOfNode, validPOSTags, frequentWordsToExclude);
 
-                    if (frequentWordsToExclude.contains(headOfHeadToken)) {
-                        depNodes = currentState.getDocument().getParse().getSiblings(indexOfNode, validPOSTags, frequentWordsToExclude);
+                boolean hasValidDepNode = false;
+
+                for (Integer depNodeIndex : childNodes) {
+
+                    //greedy exploring, skip nodes with assigned URI
+                    if (!currentState.getHiddenVariables().get(depNodeIndex).getCandidate().getUri().equals("EMPTY_STRING")) {
+                        continue;
+                    }
+
+                    String depNode = currentState.getDocument().getParse().getNodes().get(depNodeIndex);
+
+                    for (Integer indexOfDepDude : semanticTypes.keySet()) {
+
+                        String depDudeName = semanticTypes.get(indexOfDepDude);
+
+                        Set<Candidate> depNodeCandidates = getDBpediaMatches(depDudeName, depNode);
+
+                        if (depNodeCandidates.isEmpty()) {
+                            continue;
+                        }
+
+                        for (Candidate headNodeCandidate : headNodeCandidates) {
+                            for (Candidate depNodeCandidate : depNodeCandidates) {
+
+                                
+                                boolean isSubject = DBpediaEndpoint.isSubjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
+                                boolean isObject = DBpediaEndpoint.isObjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
+                                
+                                if (headNodeCandidate.getUri().equals("http://dbpedia.org/ontology/foundedBy") && depNodeCandidate.getUri().equals("http://dbpedia.org/resource/Intel")) {
+                                    int z = 1;
+                                }
+
+                                if (isSubject) {
+
+                                    //check if the slot 1 has been occupied before
+                                    List<Integer> usedSlots = currentState.getUsedSlots(indexOfNode);
+
+                                    State s = new State(currentState);
+
+                                    s.addHiddenVariable(indexOfNode, indexOfDude, headNodeCandidate);
+                                    s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
+
+                                    //Argument is 1 => subj
+                                    if (depDudeName.equals("RestrictionClass") || depDudeName.equals("Property") || dudeName.equals("Property") || dudeName.equals("RestrictionClass")) {
+
+                                        if (usedSlots.contains(1)) {
+
+                                            s.addSlotVariable(depNodeIndex, indexOfNode, 2);
+
+                                        } else {
+                                            s.addSlotVariable(depNodeIndex, indexOfNode, 1);
+                                        }
+                                    }
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
+                                        newStates.add(s);
+                                    }
+
+                                    hasValidDepNode = true;
+                                }
+                                if (isObject) {
+                                    List<Integer> usedSlots = currentState.getUsedSlots(indexOfNode);
+
+                                    State s = new State(currentState);
+
+                                    s.addHiddenVariable(indexOfNode, indexOfDude, headNodeCandidate);
+                                    s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
+
+                                    //Argument number is 2 => obj
+                                    if (depDudeName.equals("RestrictionClass") || depDudeName.equals("Property") || dudeName.equals("Property") || dudeName.equals("RestrictionClass")) {
+
+                                        if (usedSlots.contains(2)) {
+                                            s.addSlotVariable(depNodeIndex, indexOfNode, 1);
+                                        } else {
+                                            s.addSlotVariable(depNodeIndex, indexOfNode, 2);
+                                        }
+                                    }
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
+                                        newStates.add(s);
+                                    }
+
+                                    hasValidDepNode = true;
+                                }
+                            }
+                        }
                     }
                 }
 
-                for (Integer depNodeIndex : depNodes) {
+                //if the dependent nodes have been explored, then no need to explore the siblings
+                if (hasValidDepNode) {
+                    continue;
+                }
+
+                for (Integer depNodeIndex : siblings) {
 
                     //greedy exploring, skip nodes with assigned URI
                     if (!currentState.getHiddenVariables().get(depNodeIndex).getCandidate().getUri().equals("EMPTY_STRING")) {
@@ -120,13 +204,15 @@ public class EdgeExplorer implements Explorer<State> {
                                     s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
 
                                     //Argument is 1 => subj
-                                    if (depDudeName.equals("Property") || dudeName.equals("Property")) {
+                                    if (depDudeName.equals("RestrictionClass") || depDudeName.equals("Property") || dudeName.equals("Property") || dudeName.equals("RestrictionClass")) {
                                         s.addSlotVariable(depNodeIndex, indexOfNode, 1);
                                     }
 
                                     if (!s.equals(currentState) && !newStates.contains(s)) {
                                         newStates.add(s);
                                     }
+
+                                    hasValidDepNode = true;
                                 }
                                 if (isObject) {
                                     State s = new State(currentState);
@@ -142,6 +228,8 @@ public class EdgeExplorer implements Explorer<State> {
                                     if (!s.equals(currentState) && !newStates.contains(s)) {
                                         newStates.add(s);
                                     }
+
+                                    hasValidDepNode = true;
                                 }
                             }
                         }

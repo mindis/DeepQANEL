@@ -31,8 +31,10 @@ public class ProjectConfiguration {
     private static final String PARAM_SETTING_MATOLL = "-m2";
     private static final String PARAM_SETTING_EPOCHS = "-e";
     private static final String PARAM_SETTING_SAMPLING_STEPS = "-s";
-    private static final String PARAM_SETTING_BEAMSIZE_TRAINING = "-k";
-    private static final String PARAM_SETTING_BEAMSIZE_TEST = "-l";
+    private static final String PARAM_SETTING_BEAMSIZE_TRAINING_NEL = "-k1";
+    private static final String PARAM_SETTING_BEAMSIZE_TRAINING_QA = "-k2";
+    private static final String PARAM_SETTING_BEAMSIZE_TEST_NEL = "-l1";
+    private static final String PARAM_SETTING_BEAMSIZE_TEST_QA = "-l2";
     private static final String PARAM_SETTING_TASK = "-t";
     private static final String PARAM_SETTING_MAX_WORD_COUNT = "-w";
 
@@ -82,13 +84,23 @@ public class ProjectConfiguration {
         return numberOfSamplingSteps;
     }
 
-    public static int getTrainingBeamSize() {
-        int numberKSamples = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_BEAMSIZE_TRAINING));
+    public static int getNELTrainingBeamSize() {
+        int numberKSamples = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_BEAMSIZE_TRAINING_NEL));
 
         return numberKSamples;
     }
-    public static int getTestBeamSize() {
-        int numberKSamples = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_BEAMSIZE_TEST));
+    public static int getQATrainingBeamSize() {
+        int numberKSamples = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_BEAMSIZE_TRAINING_QA));
+
+        return numberKSamples;
+    }
+    public static int getNELTestBeamSize() {
+        int numberKSamples = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_BEAMSIZE_TEST_NEL));
+
+        return numberKSamples;
+    }
+    public static int getQATestBeamSize() {
+        int numberKSamples = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_BEAMSIZE_TEST_QA));
 
         return numberKSamples;
     }

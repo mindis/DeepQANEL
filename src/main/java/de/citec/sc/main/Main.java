@@ -39,7 +39,7 @@ public class Main {
 
         } else {
 
-            args = new String[20];
+            args = new String[24];
             args[0] = "-d1";//query dataset
             args[1] = "qald6Train";//qald6Train  qald6Test   qaldSubset
             args[2] = "-d2";  //test dataset
@@ -49,17 +49,21 @@ public class Main {
             args[6] = "-m2";//matoll
             args[7] = "true";//true, false
             args[8] = "-e";//epochs
-            args[9] = "" + 2;
+            args[9] = "" + 1;
             args[10] = "-s";//sampling steps
             args[11] = "" + 15;
-            args[12] = "-k";//top k samples to select from during training
-            args[13] = "" + 1;
-            args[14] = "-l";//top k samples to select from during testing
-            args[15] = "" + 10;
-            args[16] = "-w";//max word count
-            args[17] = "" + 3;
-            args[18] = "-t";//task name
-            args[19] = "linking";//qa, linking
+            args[12] = "-k1";//top k samples to select from during training NEL
+            args[13] = "" + 10;
+            args[14] = "-k2";//top k samples to select from during training for QA
+            args[15] = "" + 2;
+            args[16] = "-l1";//top k samples to select from during testing for NEL
+            args[17] = "" + 6;
+            args[18] = "-l2";//top k samples to select from during testing for QA
+            args[19] = "" + 1;
+            args[20] = "-w";//max word count
+            args[21] = "" + 30;
+            args[22] = "-t";//task name
+            args[23] = "linking";//qa, linking
         }
 
         ProjectConfiguration.loadConfigurations(args);
@@ -74,7 +78,6 @@ public class Main {
         //train and test model
         try {
             List<Model<AnnotatedDocument, State>> trainedModels = Pipeline.train(trainDocuments);
-
 
 //            trainedModel.saveModelToFile("models", "model");
             Pipeline.test(trainedModels, testDocuments);
@@ -102,13 +105,10 @@ public class Main {
         semanticTypes.put(2, "Individual");
         semanticTypes.put(3, "Class");
         semanticTypes.put(4, "RestrictionClass");
-        
-       
+
         //semantic types with special meaning
         Map<Integer, String> specialSemanticTypes = new LinkedHashMap<>();
-        specialSemanticTypes.put(semanticTypes.size()+1, "What");//it should be higher than semantic type size
-        
-
+        specialSemanticTypes.put(semanticTypes.size() + 1, "What");//it should be higher than semantic type size
 
         Set<String> validPOSTags = new HashSet<>();
         validPOSTags.add("NN");
@@ -139,7 +139,7 @@ public class Main {
         frequentWordsToExclude.add("many");
         frequentWordsToExclude.add("have");
         frequentWordsToExclude.add("belong");
-        
+
         //these words can have special semantic type
         Set<String> wordsWithSpecialSemanticTypes = new HashSet<>();
         wordsWithSpecialSemanticTypes.add("which");
@@ -149,10 +149,12 @@ public class Main {
         wordsWithSpecialSemanticTypes.add("how");
         wordsWithSpecialSemanticTypes.add("when");
         wordsWithSpecialSemanticTypes.add("where");
+        wordsWithSpecialSemanticTypes.add("give");
+        wordsWithSpecialSemanticTypes.add("show a list");
 
         Pipeline.initialize(validPOSTags, semanticTypes, specialSemanticTypes, frequentWordsToExclude, wordsWithSpecialSemanticTypes);
-        
-        QueryConstructor.initialize(specialSemanticTypes, semanticTypes, validPOSTags, frequentWordsToExclude);
+
+        QueryConstructor.initialize(specialSemanticTypes, semanticTypes, validPOSTags, frequentWordsToExclude, wordsWithSpecialSemanticTypes);
     }
 
     private static List<AnnotatedDocument> getDocuments(QALDCorpusLoader.Dataset dataset) {
@@ -167,23 +169,18 @@ public class Main {
 
         List<AnnotatedDocument> documents = new ArrayList<>();
 
-        System.out.print("Loaded dataset : " + dataset);
+        
         for (AnnotatedDocument d1 : corpus.getDocuments()) {
-//            String question = d1.getQuestionString();
 
-//            if (d1.getQaldInstance().getAggregation().equals("false") && d1.getQaldInstance().getOnlyDBO().equals("true") && d1.getQaldInstance().getHybrid().equals("false")) {
             if (DBpediaEndpoint.isValidQuery(d1.getGoldQueryString(), false)) {
 
-                if (d1.getQuestionString().split(" ").length <= ProjectConfiguration.getMaxWordCount()) {
-                    d1.getParse().mergeEdges();
+                d1.getParse().mergeEdges();
+                if (d1.getParse().getNodes().size() <= ProjectConfiguration.getMaxWordCount()) {
                     documents.add(d1);
                 }
-
             }
-//            }
         }
-
-        System.out.println(" contains " + documents.size() + " instances.");
+        System.out.print("Loaded dataset : " + dataset+ " with "+ documents.size() + " instances.");
 
         return documents;
     }

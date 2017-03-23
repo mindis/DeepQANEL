@@ -33,21 +33,21 @@ import variables.AbstractState;
 
 public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<InstanceT>, ResultT>
         implements IBeamSearchSampler<StateT, ResultT> {
-    
+
     public interface StepCallback {
-        
+
         default <InstanceT, StateT extends AbstractState<InstanceT>> void onStartStep(
                 MyBeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
                 List<StateT> initialStates) {
         }
-        
+
         default <InstanceT, StateT extends AbstractState<InstanceT>> void onEndStep(
                 MyBeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
                 List<StateT> initialStates, List<StateT> currentState) {
-            
+
         }
     }
-    
+
     protected static Logger log = LogManager.getFormatterLogger();
     protected Model<InstanceT, StateT> model;
     protected Scorer scorer;
@@ -63,7 +63,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
      */
     private BeamSearchSamplingStrategy<StateT> trainSamplingStrategy = BeamSearchSamplingStrategies
             .greedyBeamSearchSamplingStrategyByObjective(DEFAULT_BEAM_SIZE, s -> s.getObjectiveScore());
-    
+
     private AcceptStrategy<StateT> trainAcceptStrategy = AcceptStrategies.objectiveAccept();
 
     /**
@@ -76,17 +76,17 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
      * Strict accept strategy for test phase.
      */
     private AcceptStrategy<StateT> testAcceptStrategy = AcceptStrategies.strictModelAccept();
-    
+
     private List<StepCallback> stepCallbacks = new ArrayList<>();
-    
+
     public List<StepCallback> getStepCallbacks() {
         return stepCallbacks;
     }
-    
+
     public void addStepCallbacks(List<StepCallback> stepCallbacks) {
         this.stepCallbacks.addAll(stepCallbacks);
     }
-    
+
     public void addStepCallback(StepCallback stepCallback) {
         this.stepCallbacks.add(stepCallback);
     }
@@ -112,13 +112,13 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
         this.explorers = explorers;
         this.stoppingCriterion = stoppingCriterion;
     }
-    
+
     @Override
     public List<List<StateT>> generateChain(List<StateT> initialStates, ResultT goldResult, Learner<StateT> learner) {
         List<List<StateT>> generatedChain = new ArrayList<>();
-        
+
         List<StateT> currentStates = new ArrayList<>();
-        
+
         currentStates.addAll(initialStates);
         int step = 0;
         do {
@@ -131,15 +131,15 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
                 for (StepCallback c : stepCallbacks) {
                     c.onStartStep(this, step, e, explorers.size(), initialStates);
                 }
-                
+
                 if (step % stepsBetweenTraining == 0) {
                     currentStates = performTrainingStep(learner, explorer, goldResult, currentStates);
                 } else {
                     currentStates = performPredictionStep(explorer, currentStates);
                 }
-                
+
                 generatedChain.add(currentStates);
-                
+
                 for (StepCallback c : stepCallbacks) {
                     c.onEndStep(this, step, e, explorers.size(), initialStates, currentStates);
                 }
@@ -147,34 +147,33 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
             }
             step++;
         } while (!stoppingCriterion.checkCondition(generatedChain, step));
-        
+
         log.info("\n\nStop sampling after step %s", step);
 
         //loop over generated chain and check if any state has 1.0 as objective score
-        
         List<StateT> lastChain = generatedChain.get(generatedChain.size() - 1);
         //get the highest scoring state
         StateT finalState = lastChain.stream().max((s1, s2) -> Double.compare(s1.getObjectiveScore(), s2.getObjectiveScore())).get();
         State s = (State) finalState;
-        
+
         if (s.getObjectiveScore() == 1.0) {
             Performance.addParsed(s.getDocument().getQuestionString(), s.getDocument().getGoldQueryString());
         } else {
-            String q = s.toString()+"\n\nScore: "+s.getObjectiveScore()+"\n"
+            String q = s.toString() + "\n\nScore: " + s.getObjectiveScore() + "\n"
                     + "================================================================================================================\n";
-            
+
             Performance.addUnParsed(s.getDocument().getQuestionString(), q);
         }
         return generatedChain;
     }
-    
+
     @Override
     public List<List<StateT>> generateChain(List<StateT> initialStates) {
-        
+
         List<List<StateT>> generatedChain = new ArrayList<>();
         List<StateT> currentStates = new ArrayList<>();
         currentStates.addAll(initialStates);
-        
+
         int step = 0;
         do {
             log.info("---------------------------");
@@ -186,11 +185,11 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
                     c.onStartStep(this, step, e, explorers.size(), initialStates);
                 }
                 currentStates = performPredictionStep(explorer, currentStates);
-                
+
                 log.info("States# " + currentStates.size());
-                
+
                 generatedChain.add(currentStates);
-                
+
                 for (StepCallback c : stepCallbacks) {
                     c.onEndStep(this, step, e, explorers.size(), initialStates, currentStates);
                 }
@@ -198,9 +197,9 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
             }
             step++;
         } while (!stoppingCriterion.checkCondition(generatedChain, step));
-        
+
         log.info("\n\nStop sampling after step %s", step);
-        
+
         return generatedChain;
     }
 
@@ -217,24 +216,29 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
     protected List<StateT> performTrainingStep(Learner<StateT> learner, Explorer<StateT> explorer, ResultT goldResult,
             List<StateT> currentStates) {
         log.debug("TRAINING Step:");
-        
+
         Map<Integer, List<StateT>> mapStates = new HashMap<>();
-        
+
         int c = 0;
         List<StateT> allStates = new ArrayList<>(currentStates);
         List<StatePair<StateT>> allNextStatePairs = new ArrayList<>();
+        Map<StateT, List<StateT>> allStateWithParent = new HashMap<>();
+
         for (StateT currentState : currentStates) {
             /**
              * Generate possible successor states.
              */
             List<StateT> nextStates = explorer.getNextStates(currentState);
+
             mapStates.put(c, nextStates);
+            allStateWithParent.put(currentState, nextStates);
+
             allStates.addAll(nextStates);
             allNextStatePairs.addAll(
                     nextStates.stream().map(s -> new StatePair<>(currentState, s)).collect(Collectors.toList()));
             c++;
         }
-
+        
         /**
          * Score all states with Objective/Model only if sampling strategy needs
          * that. If not, score only selected candidate and current.
@@ -245,17 +249,21 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
              */
             scoreWithObjective(allStates, goldResult);
         }
-        
+
         if (trainSamplingStrategy.usesModel()) {
             /**
              * Apply templates to states and, thus generate factors and features
              */
-            model.score(allStates, currentStates.get(0).getInstance());
+            for (StateT currentState : allStateWithParent.keySet()) {
+
+                model.score(allStateWithParent.get(currentState), currentState.getInstance());
+            }
+//            model.score(allStates, currentStates.get(0).getInstance());
         }
         /**
          * Sample one possible successor
          */
-        
+
         List<StatePair<StateT>> candidateStatePairs = trainSamplingStrategy
                 .sampleCandidate(new ArrayList<>(allNextStatePairs));
         List<StateT> candidateStates = candidateStatePairs.stream().map(p -> p.getCandidateState())
@@ -306,13 +314,13 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
                     : currentState;
             acceptedStates.add(acceptedState);
         }
-        
+
         if (acceptedStates.isEmpty()) {
             acceptedStates.add(currentStates.get(0));
         }
-        
+
         return new ArrayList<>(acceptedStates);
-        
+
     }
 
     /**
@@ -326,16 +334,20 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
     protected List<StateT> performPredictionStep(Explorer<StateT> explorer, List<StateT> currentStates) {
         log.debug("PREDICTION:");
         Map<Integer, List<StateT>> mapStates = new HashMap<>();
-        
+
         int c = 0;
         List<StateT> allStates = new ArrayList<>(currentStates);
         List<StatePair<StateT>> allNextStatePairs = new ArrayList<>();
+        Map<StateT, List<StateT>> allStateWithParent = new HashMap<>();
+
         for (StateT currentState : currentStates) {
             /**
              * Generate possible successor states.
              */
             List<StateT> nextStates = explorer.getNextStates(currentState);
             mapStates.put(c, nextStates);
+            allStateWithParent.put(currentState, nextStates);
+
             allStates.addAll(nextStates);
             allNextStatePairs.addAll(
                     nextStates.stream().map(s -> new StatePair<>(currentState, s)).collect(Collectors.toList()));
@@ -349,7 +361,11 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
         /**
          * Apply templates to states and, thus generate factors and features
          */
-        model.score(allStates, currentStates.get(0).getInstance());
+        for (StateT currentState : allStateWithParent.keySet()) {
+
+            model.score(allStateWithParent.get(currentState), currentState.getInstance());
+        }
+//        model.score(allStates, currentStates.get(0).getInstance());
 
         /**
          * Sample one possible successor
@@ -369,7 +385,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
             acceptedStates.add(acceptedState);
         }
         if (acceptedStates.isEmpty()) {
-            acceptedStates.add(currentStates.get(0));
+            acceptedStates.addAll(currentStates);
         }
         return new ArrayList<>(acceptedStates);
     }
@@ -390,15 +406,15 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
         stream.forEach(s -> objective.score(s, goldResult));
         TaggedTimer.stop(scID);
     }
-    
+
     protected Model<?, StateT> getModel() {
         return model;
     }
-    
+
     protected Scorer getScorer() {
         return scorer;
     }
-    
+
     public BeamSearchStoppingCriterion<StateT> getStoppingCriterion() {
         return stoppingCriterion;
     }
@@ -423,7 +439,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
     public void setTrainSamplingStrategy(BeamSearchSamplingStrategy<StateT> samplingStrategy) {
         this.trainSamplingStrategy = samplingStrategy;
     }
-    
+
     public void setTestSamplingStrategy(BeamSearchSamplingStrategy<StateT> samplingStrategy) {
         this.testSamplingStrategy = samplingStrategy;
     }
@@ -437,17 +453,17 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
     public void setTrainAcceptStrategy(AcceptStrategy<StateT> acceptStrategy) {
         this.trainAcceptStrategy = acceptStrategy;
     }
-    
+
     public void setTestAcceptStrategy(AcceptStrategy<StateT> acceptStrategy) {
         this.testAcceptStrategy = acceptStrategy;
     }
-    
+
     public List<Explorer<StateT>> getExplorers() {
         return explorers;
     }
-    
+
     public void setExplorers(List<Explorer<StateT>> explorers) {
         this.explorers = explorers;
     }
-    
+
 }

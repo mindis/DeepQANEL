@@ -44,11 +44,16 @@ public class QAObjectiveFunction extends ObjectiveFunction<State, String> implem
             return 0;
         }
 
-        double score1 = AnswerEvaluator.evaluate(constructedQuery, goldState);
         double score2 = 0;
         if (useQueryEvaluator) {
             score2 = QueryEvaluator.evaluate(constructedQuery, goldState);
         }
+        
+        if(score2 == 1.0){
+            return score2;
+        }
+        double score1 = AnswerEvaluator.evaluate(constructedQuery, goldState);
+        
 
         double score = Math.max(score1, score2);
         
