@@ -43,7 +43,7 @@ public class Main {
             args[0] = "-d1";//query dataset
             args[1] = "qald6Train";//qald6Train  qald6Test   qaldSubset
             args[2] = "-d2";  //test dataset
-            args[3] = "qald6Train";//qald6Train  qald6Test   qaldSubset
+            args[3] = "qald6Test";//qald6Train  qald6Test   qaldSubset
             args[4] = "-m1";//manual lexicon
             args[5] = "true";//true, false
             args[6] = "-m2";//matoll
@@ -171,13 +171,16 @@ public class Main {
 
         
         for (AnnotatedDocument d1 : corpus.getDocuments()) {
-
+            
             if (DBpediaEndpoint.isValidQuery(d1.getGoldQueryString(), false)) {
 
                 d1.getParse().mergeEdges();
                 if (d1.getParse().getNodes().size() <= ProjectConfiguration.getMaxWordCount()) {
                     documents.add(d1);
                 }
+            }
+            else{
+                System.out.println("Invalid query: " + d1.getQuestionString()+" Query: "+ d1.getGoldQueryString().replace("\n", " "));
             }
         }
         System.out.print("Loaded dataset : " + dataset+ " with "+ documents.size() + " instances.");

@@ -232,7 +232,7 @@ public class DBpediaEndpoint {
         String body = query.substring(query.indexOf("WHERE"));
         String head = query.substring(0, query.indexOf("WHERE"));
 
-        body = body.replaceAll("\\s", "");
+        body = body.replaceAll("\\s+", " ");
         query = head.trim() + " " + body;
 
         return query;

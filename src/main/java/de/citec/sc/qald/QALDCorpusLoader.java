@@ -27,13 +27,14 @@ public class QALDCorpusLoader {
     private static final String qald4FileTest = "src/main/resources/qald-4_multilingual_test_withanswers.xml";
     private static final String qald5FileTrain = "src/main/resources/qald-5_train.xml";
     private static final String qald6FileTrain = "src/main/resources/qald-6-train-multilingual.json";
+    private static final String qald7FileTrain = "src/main/resources/qald-7-train-multilingual.json";
     private static final String qald6FileTest = "src/main/resources/qald-6-test-multilingual.json";
     private static final String qald5FileTest = "src/main/resources/qald-5_test.xml";
     private static final String qaldSubset = "src/main/resources/qald_test.xml";
 
     public enum Dataset {
 
-        qald4Test, qald4Train, qald5Test, qald5Train, qaldSubset, qald6Train, qald6Test
+        qald4Test, qald4Train, qald5Test, qald5Train, qaldSubset, qald6Train, qald6Test, qald7Train
     }
 
     /**
@@ -82,6 +83,10 @@ public class QALDCorpusLoader {
                 break;
             case "qald6Test":
                 filePath = qald6FileTest;
+                questions = readJSONFile(filePath);
+                break;
+            case "qald7Train":
+                filePath = qald7FileTrain;
                 questions = readJSONFile(filePath);
                 break;
             default:
@@ -151,17 +156,35 @@ public class QALDCorpusLoader {
             for (int i = 0; i < questions.size(); i++) {
                 HashMap o1 = (HashMap) questions.get(i);
 
-                String hybrid = (String) o1.get("hybrid");
+                String hybrid = "", onlyDBO = "", aggregation = "";
+                if (o1.get("hybrid") instanceof Boolean) {
+                    Boolean b = (Boolean) o1.get("hybrid");
+                    hybrid = b.toString();
+                } else {
+                    hybrid = (String) o1.get("hybrid");
+                }
+
+                if (o1.get("onlydbo") instanceof Boolean) {
+                    Boolean b = (Boolean) o1.get("onlydbo");
+                    onlyDBO = b.toString();
+                } else {
+                    onlyDBO = (String) o1.get("onlydbo");
+                }
+
+                if (o1.get("aggregation") instanceof Boolean) {
+                    Boolean b = (Boolean) o1.get("aggregation");
+                    aggregation = b.toString();
+                } else {
+                    aggregation = (String) o1.get("aggregation");
+                }
 
                 String answerType = (String) o1.get("answertype");
 
-                String onlyDBO = (String) o1.get("onlydbo");
-
-                String aggregation = (String) o1.get("aggregation");
                 String id = o1.get("id").toString();
 
                 HashMap queryTextObj = (HashMap) o1.get("query");
                 String query = (String) queryTextObj.get("sparql");
+
                 String questionText = "";
 
                 JSONArray questionTexts = (JSONArray) o1.get("question");
@@ -181,6 +204,9 @@ public class QALDCorpusLoader {
                         if (query.contains("UNION")) {
                             query = removeUNION(query);
                         }
+                        
+                        query = query.replace("\n", " ");
+                        
                         Question q1 = new Question(questionText, query, onlyDBO, aggregation, answerType, hybrid, id);
                         qaldQuestions.add(q1);
                     }
@@ -203,7 +229,10 @@ public class QALDCorpusLoader {
 
             q = q.replace(s2, "");
             String tail = q.substring(q.lastIndexOf("}") + 1);
-            q = q.replace(tail, " ");
+            if (!tail.trim().isEmpty()) {
+                q = q.replace(tail, " ");
+            }
+
             q = q.replace("{", " ");
             q = q.replace("}", " ");
             q = q.replace("WHERE", "WHERE { ");

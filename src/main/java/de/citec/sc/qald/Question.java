@@ -178,8 +178,10 @@ public class Question {
 
     @Override
     public String toString() {
-        return "Question{" + "questionText=" + questionText + ", queryText=" + queryText + '}';
+        return "Question{" + "questionText=" + questionText + ", queryText=" + queryText + ", id=" + id + ", onlyDBO=" + onlyDBO + ", aggregation=" + aggregation + ", answerType=" + answerType + ", hybrid=" + hybrid + '}';
     }
+
+    
 
     public String getKeywords() {
         return keywords;
