@@ -626,7 +626,7 @@ public class DependencyParse {
 
                     if (k.equals(otherK)) {
                         isLoop = true;
-                        
+
                         loopRelationKey = k;
                         loopRelationValue = v;
                         break;
@@ -635,7 +635,7 @@ public class DependencyParse {
             }
 
             if (loopRelationKey != -1 && loopRelationValue != -1) {
-                System.out.println("Removed loop from edge: " +loopRelationKey +", "+ loopRelationValue);
+                System.out.println("Removed loop from edge: " + loopRelationKey + ", " + loopRelationValue);
                 relations.remove(loopRelationKey, loopRelationValue);
             } else {
                 isLoop = false;
@@ -965,4 +965,83 @@ public class DependencyParse {
         this.treeString = treeString;
     }
 
+    /**
+     * @param currentTokenPosition (Integer) to start from
+     * @param numberOfPOSTAGS indicates the number of postags of the next tokens
+     * to merge
+     * @return string which contains all postags merged.
+     */
+    public String getPOSTagsMerged(Integer tokenPosition, int numberOfPOSTAGs) {
+        String mergedPOSTAGs = "";
+
+        List<Integer> allTokenPositions = new ArrayList<>(nodes.keySet());
+
+        Collections.sort(allTokenPositions);
+
+        int i = allTokenPositions.indexOf(tokenPosition);
+
+        if (i + numberOfPOSTAGs - 1 < allTokenPositions.size()) {
+            List<Integer> subList = allTokenPositions.subList(i, i + numberOfPOSTAGs);
+
+            for (Integer s1 : subList) {
+                mergedPOSTAGs += getPOSTag(s1) + " ";
+            }
+        }
+
+        mergedPOSTAGs = mergedPOSTAGs.trim();
+
+        return mergedPOSTAGs;
+    }
+
+    /**
+     * @param currentTokenPosition (Integer) to start from
+     * @param numberOfPOSTAGS indicates the number of postags of the next tokens
+     * to merge
+     * @return string which contains all postags merged.
+     */
+    public String getPOSTagsMergedForInterval(Integer tokenPosition1, Integer tokenPosition2) {
+        String mergedPOSTAGs = "";
+
+        List<Integer> allTokenPositions = new ArrayList<>(nodes.keySet());
+
+        Collections.sort(allTokenPositions);
+
+        Integer smallOne = Math.min(tokenPosition1, tokenPosition2);
+        Integer bigOne = Math.max(tokenPosition1, tokenPosition2);
+
+        int startPosition = allTokenPositions.indexOf(smallOne);
+        int endPosition = allTokenPositions.indexOf(bigOne);
+
+        List<Integer> subList = allTokenPositions.subList(startPosition, endPosition + 1);
+
+        for (Integer s1 : subList) {
+            mergedPOSTAGs += getPOSTag(s1) + " ";
+        }
+
+        mergedPOSTAGs = mergedPOSTAGs.trim();
+
+        return mergedPOSTAGs;
+    }
+
+    /**
+     * @param currentTokenPosition (Integer) to start from
+     * @param numberOfPOSTAGS indicates the number of postags of the next tokens
+     * to merge
+     * @return string which contains all postags merged.
+     */
+    public List<Integer> getNextTokens(Integer tokenID, int numberOfTokens) {
+        List<Integer> nextTokens = new ArrayList<>();
+
+        List<Integer> allTokenPositions = new ArrayList<>(nodes.keySet());
+
+        Collections.sort(allTokenPositions);
+
+        int i = allTokenPositions.indexOf(tokenID);
+
+        if (i + numberOfTokens - 1 < allTokenPositions.size()) {
+            nextTokens = allTokenPositions.subList(i, i + numberOfTokens);
+        }
+
+        return nextTokens;
+    }
 }

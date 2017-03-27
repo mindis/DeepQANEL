@@ -143,6 +143,26 @@ public class State extends AbstractState<AnnotatedDocument> {
 
         return state;
     }
+    public String toLessDetailedString() {
+        String state = "";
+
+        state += "HiddenVariables:\n";
+        
+        for (Integer d : hiddenVariables.keySet()) {
+            state += hiddenVariables.get(d).toString() + "\n";
+        }
+        
+        state += "\nSlotVariables:\n";
+        
+        for (Integer d : slotVariables.keySet()) {
+            state += slotVariables.get(d).toString() + "\n";
+        }
+
+        state += "\nObjectiveScore: " + getObjectiveScore();
+        state += "\nModelScore: " + getModelScore() + "\n";
+
+        return state;
+    }
 
 
     public AnnotatedDocument getDocument() {

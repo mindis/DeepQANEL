@@ -8,6 +8,7 @@ package de.citec.sc.utils;
 import de.citec.sc.corpus.AnnotatedDocument;
 import de.citec.sc.corpus.SampledMultipleInstance;
 import de.citec.sc.learning.NELObjectiveFunction;
+import de.citec.sc.learning.QueryConstructor;
 import de.citec.sc.variable.HiddenVariable;
 import de.citec.sc.variable.State;
 import java.io.File;
@@ -99,18 +100,17 @@ public class Performance {
 
     public static void logNELTest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
 
-        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName()+ "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
 
         String allStatesAsString = "";
 
-        int stateCount = 0;
+        
         for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
 
-            allStatesAsString += "Instance#"+stateCount+"\n";
+            allStatesAsString += triple.getInstance().toString()+"\n State #: "+triple.getStates().size();
             
-            stateCount ++;
             for (State state : triple.getStates()) {
-                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toString()+"\n\n";
+                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+"\n\n";
             }
             
             allStatesAsString += "========================================================\n";
@@ -184,18 +184,16 @@ public class Performance {
 
     public static void logQATest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
 
-        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
 
         String allStatesAsString = "";
 
-        int stateCount = 0;
         for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
 
-            allStatesAsString += "Instance#"+stateCount+"\n";
+            allStatesAsString += triple.getInstance().toString()+"\n State #: "+triple.getStates().size();
             
-            stateCount ++;
             for (State state : triple.getStates()) {
-                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toString()+"\n-----------------------------------------------------------------------\n";
+                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+"\n\n";
             }
             
             allStatesAsString += "========================================================\n";
@@ -220,12 +218,14 @@ public class Performance {
             }
 
             overAllScore += maxScore;
+            
+            String query = QueryConstructor.getSPARQLQuery(maxState);
 
             if (maxScore == 1.0) {
-                correctInstances += maxState + "\nScore: " + maxScore + "\n========================================================================\n";
+                correctInstances += maxState + "\nScore: " + maxScore + "\nConstructed Query: \n"+query+ "\n========================================================================\n";
                 c++;
             } else {
-                inCorrectInstances += maxState + "\nScore: " + maxScore + "\n========================================================================\n";
+                inCorrectInstances += maxState + "\nScore: " + maxScore + "\nConstructed Query: \n"+query+ "\n========================================================================\n";
             }
         }
 

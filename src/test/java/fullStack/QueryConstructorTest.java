@@ -13,9 +13,14 @@ import de.citec.sc.parser.DependencyParse;
 import de.citec.sc.qald.QALDCorpusLoader;
 import de.citec.sc.qald.Question;
 import de.citec.sc.query.Candidate;
+import de.citec.sc.query.CandidateRetriever;
+import de.citec.sc.query.CandidateRetrieverOnLucene;
+import de.citec.sc.query.ManualLexicon;
+import de.citec.sc.query.Search;
 import de.citec.sc.utils.DBpediaEndpoint;
 import de.citec.sc.utils.ProjectConfiguration;
 import de.citec.sc.variable.State;
+import de.citec.sc.wordNet.WordNetAnalyzer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -33,7 +38,6 @@ import org.junit.Test;
 public class QueryConstructorTest {
 
 //    public static void main(String[] args){
-    @Ignore
     @Test
     public void test1() {
 
@@ -138,7 +142,6 @@ public class QueryConstructorTest {
 
     }
 
-    @Ignore
     @Test
     public void test2() {
 
@@ -246,8 +249,18 @@ public class QueryConstructorTest {
 
     }
 
+    @Ignore
     @Test
     public void test3() {
+        
+        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+
+        WordNetAnalyzer wordNet = new WordNetAnalyzer("src/main/resources/WordNet-3.0/dict");
+
+        Search.load(retriever, wordNet);
+        Search.useMatoll(true);
+
+        ManualLexicon.useManualLexicon(true);
 
         //semantic types to sample from
         Map<Integer, String> semanticTypes = new LinkedHashMap<>();

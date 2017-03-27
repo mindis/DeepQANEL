@@ -74,12 +74,18 @@ public class Main {
         //load training and testing corpus
         List<AnnotatedDocument> trainDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTrainingDatasetName()));
         List<AnnotatedDocument> testDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTestDatasetName()));
+        
+        System.out.println("Training on "+ProjectConfiguration.getTrainingDatasetName()+" with "+trainDocuments.size());
+        System.out.println("Testing on "+ProjectConfiguration.getTestDatasetName()+" with "+testDocuments.size());
 
         //train and test model
         try {
             List<Model<AnnotatedDocument, State>> trainedModels = Pipeline.train(trainDocuments);
 
-//            trainedModel.saveModelToFile("models", "model");
+            for (Model<AnnotatedDocument, State> m1 : trainedModels) {
+                m1.saveModelToFile("models", "model");
+            }
+
             Pipeline.test(trainedModels, testDocuments);
 //            Pipeline.test("models/model", trainDocuments);
         } catch (Exception ex) {
@@ -89,6 +95,8 @@ public class Main {
     }
 
     private static void initialize() {
+        
+        System.out.println("Initialization process has started ....");
 
         CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
 
@@ -150,11 +158,14 @@ public class Main {
         wordsWithSpecialSemanticTypes.add("when");
         wordsWithSpecialSemanticTypes.add("where");
         wordsWithSpecialSemanticTypes.add("give");
+        wordsWithSpecialSemanticTypes.add("what");
         wordsWithSpecialSemanticTypes.add("show a list");
 
         Pipeline.initialize(validPOSTags, semanticTypes, specialSemanticTypes, frequentWordsToExclude, wordsWithSpecialSemanticTypes);
 
         QueryConstructor.initialize(specialSemanticTypes, semanticTypes, validPOSTags, frequentWordsToExclude, wordsWithSpecialSemanticTypes);
+        
+        System.out.println("Initialization process has ended ....");
     }
 
     private static List<AnnotatedDocument> getDocuments(QALDCorpusLoader.Dataset dataset) {
@@ -169,21 +180,19 @@ public class Main {
 
         List<AnnotatedDocument> documents = new ArrayList<>();
 
-        
         for (AnnotatedDocument d1 : corpus.getDocuments()) {
-            
+
             if (DBpediaEndpoint.isValidQuery(d1.getGoldQueryString(), false)) {
 
                 d1.getParse().mergeEdges();
                 if (d1.getParse().getNodes().size() <= ProjectConfiguration.getMaxWordCount()) {
                     documents.add(d1);
                 }
-            }
-            else{
-                System.out.println("Invalid query: " + d1.getQuestionString()+" Query: "+ d1.getGoldQueryString().replace("\n", " "));
+            } else {
+                System.out.println("Invalid query: " + d1.getQuestionString() + " Query: " + d1.getGoldQueryString().replace("\n", " "));
             }
         }
-        System.out.print("Loaded dataset : " + dataset+ " with "+ documents.size() + " instances.");
+        System.out.print("Loaded dataset : " + dataset + " with " + documents.size() + " instances.");
 
         return documents;
     }
