@@ -252,10 +252,10 @@ public class QATrainer {
 
 	
 
-	public <InstanceT, ResultT, StateT extends AbstractState<InstanceT>> List<SampledInstance<InstanceT, ResultT, StateT>> test(
+	public <InstanceT, ResultT, StateT extends AbstractState<InstanceT>> List<SampledMultipleInstance<InstanceT, ResultT, StateT>> test(
 			IBeamSearchSampler<StateT, ResultT> sampler, List<StateT> initialStates,
 			List<InstanceT> instances, Function<InstanceT, ResultT> getResult) {
-		List<SampledInstance<InstanceT, ResultT, StateT>> finalStates = new ArrayList<>();
+		List<SampledMultipleInstance<InstanceT, ResultT, StateT>> finalStates = new ArrayList<>();
 		for (int i = 0; i < instances.size(); i++) {
 			InstanceT instance = instances.get(i);
 			ResultT goldResult = getResult.apply(instances.get(i));
@@ -279,7 +279,7 @@ public class QATrainer {
 
 			finalState.getFactorGraph().clear();
 			finalState.getFactorGraph().getFactorPool().clear();
-			finalStates.add(new SampledInstance<InstanceT, ResultT, StateT>(instance, goldResult, finalState));
+			finalStates.add(new SampledMultipleInstance<InstanceT, ResultT, StateT>(instance, goldResult, lastStepStates));
 			log.info("++++++++++++++++");
 			log.info("Gold Result:   %s", goldResult);
 			log.info("Final State:  %s", finalState);

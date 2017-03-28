@@ -107,10 +107,10 @@ public class Performance {
         
         for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
 
-            allStatesAsString += triple.getInstance().toString()+"\n State #: "+triple.getStates().size();
+            allStatesAsString += triple.getInstance().toString()+"\n Number of States : "+triple.getStates().size()+"\n";
             
             for (State state : triple.getStates()) {
-                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+"\n\n";
+                allStatesAsString += "State : "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+"\n\n--------------------------------------------------------\n";
             }
             
             allStatesAsString += "========================================================\n";
@@ -190,10 +190,11 @@ public class Performance {
 
         for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
 
-            allStatesAsString += triple.getInstance().toString()+"\n State #: "+triple.getStates().size();
+            allStatesAsString += triple.getInstance().toString()+"\n Number of States : "+triple.getStates().size()+"\n\n";
             
             for (State state : triple.getStates()) {
-                allStatesAsString += "Index: "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+"\n\n";
+                String query = QueryConstructor.getSPARQLQuery(state);
+                allStatesAsString += "State : "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+ "\nQuery:"+query+ "\n\n------------------------------------------------\n";
             }
             
             allStatesAsString += "========================================================\n";

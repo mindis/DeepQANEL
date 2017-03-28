@@ -99,8 +99,11 @@ public class DependencyParseTreeTest {
         System.out.println("Next token after current token : " + currentToken + " is -> " + nextTokens);
 
         String mergedPOSTAGs = parseTree.getPOSTagsMerged(2, 3);
+        Set<String> mergedIntervalPOSTAGs = parseTree.getIntervalPOSTagsMerged(5, 5);
+        
 
         System.out.println("Merged postags : " + mergedPOSTAGs);
+        System.out.println("Merged interval postags : " + mergedIntervalPOSTAGs);
 
         Assert.assertEquals(nextTokens.contains(5), true);
 

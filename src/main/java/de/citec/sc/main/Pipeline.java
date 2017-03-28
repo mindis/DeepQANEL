@@ -19,6 +19,7 @@ import de.citec.sc.sampling.MyBeamSearchSampler;
 import de.citec.sc.sampling.SlotExplorer;
 import de.citec.sc.sampling.SpecialSemanticsExplorer;
 import de.citec.sc.sampling.StateInitializer;
+import de.citec.sc.template.NELEdgeTemplate;
 import de.citec.sc.template.NELLexicalTemplate;
 import de.citec.sc.template.QALexicalTemplate;
 import de.citec.sc.template.QATemplateFactory;
@@ -156,6 +157,7 @@ public class Pipeline {
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
         templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        templates.add(new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
 
         /*
          * Create the scorer object that computes a score from the factors'
@@ -415,6 +417,7 @@ public class Pipeline {
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
         templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        templates.add(new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
 
         /*
          * initialize QATemplateFactory

@@ -4,6 +4,7 @@ import de.citec.sc.query.Search;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -992,16 +993,14 @@ public class DependencyParse {
 
         return mergedPOSTAGs;
     }
-
     /**
-     * @param currentTokenPosition (Integer) to start from
-     * @param numberOfPOSTAGS indicates the number of postags of the next tokens
-     * to merge
+     * @param tokenPosition1 start position
+     * @param tokenPosition2 end position
      * @return string which contains all postags merged.
      */
-    public String getPOSTagsMergedForInterval(Integer tokenPosition1, Integer tokenPosition2) {
-        String mergedPOSTAGs = "";
-
+    public Set<String> getIntervalPOSTagsMerged(Integer tokenPosition1,Integer tokenPosition2) {
+        Set<String> mergedPOSTAGs = new HashSet<>();
+//
         List<Integer> allTokenPositions = new ArrayList<>(nodes.keySet());
 
         Collections.sort(allTokenPositions);
@@ -1014,13 +1013,43 @@ public class DependencyParse {
 
         List<Integer> subList = allTokenPositions.subList(startPosition, endPosition + 1);
 
+        String postag1= "", postag2="";
         for (Integer s1 : subList) {
-            mergedPOSTAGs += getPOSTag(s1) + " ";
+            postag1 += getPOSTag(s1) + " ";
+            
+            //add the token itself if the token position is not the given by arguments
+            if(!s1.equals(tokenPosition1) && !s1.equals(tokenPosition2)){
+                postag2 += getToken(s1) + " ";
+            }
+            else{
+                postag2 += getPOSTag(s1) + " ";
+            }
         }
-
-        mergedPOSTAGs = mergedPOSTAGs.trim();
+        
+        mergedPOSTAGs.add(postag1.trim());
+        mergedPOSTAGs.add(postag2.trim());
 
         return mergedPOSTAGs;
+    }
+    
+    /**
+     * returns dependency relation for the given dependent node if given
+     * dependent node is the root of the parse tree then returns
+     * "ThisNodeIsRoot"
+     *
+     * @param dependentNodeId
+     * @return String dependency relation
+     */
+    public String getSiblingDependencyRelation(Integer node1, Integer node2) {
+        if(getParentNode(node1).equals(getParentNode(node2))){
+            String s1 = getDependencyRelation(node1);
+            String s2 = getDependencyRelation(node2);
+            String headToken = getToken(getParentNode(node1));
+            
+            return s1 + "-"+headToken+"-"+s2;
+        }
+        
+        return "ThisNodeIsRoot";
     }
 
     /**

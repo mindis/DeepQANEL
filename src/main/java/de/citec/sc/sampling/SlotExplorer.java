@@ -320,4 +320,105 @@ public class SlotExplorer implements Explorer<State> {
 
         return newStates;
     }
+    
+    public List getNextStates2(State currentState) {
+        List<State> newStates = new ArrayList<>();
+
+        for (int indexOfNode : currentState.getDocument().getParse().getNodes().keySet()) {
+            String node = currentState.getDocument().getParse().getNodes().get(indexOfNode);
+
+            String pos = currentState.getDocument().getParse().getPOSTag(indexOfNode);
+
+            boolean hasValidParent = false;
+
+            if (wordsWithSpecialSemanticTypes.contains(node.toLowerCase())) {
+
+                Integer parentNode = currentState.getDocument().getParse().getParentNode(indexOfNode);
+
+                List<Integer> siblingsOfParentNode = currentState.getDocument().getParse().getSiblings(parentNode, validPOSTags, frequentWordsToExclude);
+
+                List<Integer> headNodes = new ArrayList<>();
+                headNodes.add(parentNode);
+                headNodes.addAll(siblingsOfParentNode);
+
+                for (Integer headNode : headNodes) {
+                    
+                    if(hasValidParent){
+                        break;
+                    }
+                    
+                    HiddenVariable headVar = currentState.getHiddenVariables().get(headNode);
+
+                    String dudeName = semanticTypes.get(headVar.getDudeId());
+
+                    if (dudeName != null) {
+                        //assign extra dude for dependent nodes if the head dude is class or property
+                        if ((dudeName.equals("Property") || dudeName.equals("RestrictionClass") || dudeName.equals("Class"))) {
+
+                            for (Integer indexOfDepDude : specialSemanticTypes.keySet()) {
+                                List<Integer> usedSlots = currentState.getUsedSlots(headNode);
+
+                                if (usedSlots.contains(1) && usedSlots.contains(2)) {
+                                    State s = new State(currentState);
+
+                                    Candidate emptyInstance = new Candidate(new Instance("EMPTY_STRING", 0), 0, 0, 0);
+
+                                    s.addHiddenVariable(indexOfNode, indexOfDepDude, emptyInstance);
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
+                                        newStates.add(s);
+                                    }
+                                } else if (usedSlots.contains(1) && !usedSlots.contains(2)) {
+                                    State s = new State(currentState);
+
+                                    Candidate emptyInstance = new Candidate(new Instance("EMPTY_STRING", 0), 0, 0, 0);
+
+                                    s.addHiddenVariable(indexOfNode, indexOfDepDude, emptyInstance);
+
+                                    //add as slot 2 since 1 taken by another node
+                                    s.addSlotVariable(indexOfNode, indexOfNode, 2);
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
+                                        newStates.add(s);
+                                        
+                                        hasValidParent = true;
+                                    }
+                                } else if (!usedSlots.contains(1) && usedSlots.contains(2)) {
+                                    State s = new State(currentState);
+
+                                    Candidate emptyInstance = new Candidate(new Instance("EMPTY_STRING", 0), 0, 0, 0);
+
+                                    s.addHiddenVariable(indexOfNode, indexOfDepDude, emptyInstance);
+
+                                    //add as slot 2 since 1 taken by another node
+                                    s.addSlotVariable(indexOfNode, indexOfNode, 1);
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
+                                        newStates.add(s);
+                                        
+                                        hasValidParent = true;
+                                    }
+                                } else {
+                                    State s = new State(currentState);
+
+                                    Candidate emptyInstance = new Candidate(new Instance("EMPTY_STRING", 0), 0, 0, 0);
+
+                                    s.addHiddenVariable(indexOfNode, indexOfDepDude, emptyInstance);
+
+                                    //add as slot 2 since 1 taken by another node
+                                    s.addSlotVariable(indexOfNode, indexOfNode, 1);
+
+                                    if (!s.equals(currentState) && !newStates.contains(s)) {
+                                        newStates.add(s);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return newStates;
+    }
 }

@@ -322,6 +322,12 @@ public class QueryConstructorTest {
         if (!documents.isEmpty()) {
 
             doc = documents.get(0);
+            
+            System.out.println(doc);
+            
+            Set<String> mergedPOSTAGs = doc.getParse().getIntervalPOSTagsMerged(3, 5);
+            
+            System.out.println(mergedPOSTAGs);
 
             State state = new State(doc);
 

@@ -72,60 +72,139 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
             if (headURI.equals("EMPTY_STRING")) {
                 continue;
             }
-            
+
             List<Integer> dependentNodes = state.getDocument().getParse().getDependentEdges(tokenID, validPOSTags, frequentWordsToExclude);
             List<Integer> siblings = state.getDocument().getParse().getSiblings(tokenID, validPOSTags, frequentWordsToExclude);
-            
-            
-            //handle specific case
-            //mayor of Tel-Aviv, headquarters of MI6
-            // NN(s) IN NNP
-            String mergedPOSTAGs = state.getDocument().getParse().getPOSTagsMerged(tokenID,3);
-            if(mergedPOSTAGs.equals("NN IN NNP") || mergedPOSTAGs.equals("NNS IN NNP")){
-                
-                featureVector.addToValue("NEL EDGE FEATURE: URI: " + headURI + " TOKEN: " + headToken + " POS : " + headPOS + " SEM-TYPE: " + dudeName, 1.0);
-            }
-
-            
-
-            //add lexical feature only for nouns, noun phrases etc.
-            if (dependentNodes.isEmpty() && (headPOS.startsWith("NN") || headPOS.startsWith("JJ"))) {
-                featureVector.addToValue("LEXICAL FEATURE: URI: " + headURI + " TOKEN: " + headToken + " POS : " + headPOS + " SEM-TYPE: " + dudeName, 1.0);
-            }
 
             if (!dependentNodes.isEmpty()) {
 
                 for (Integer depNodeID : dependentNodes) {
                     String depToken = state.getDocument().getParse().getToken(depNodeID);
                     String depURI = state.getHiddenVariables().get(depNodeID).getCandidate().getUri();
+                    String depPOS = state.getDocument().getParse().getPOSTag(depNodeID);
                     Integer depDudeID = state.getHiddenVariables().get(depNodeID).getDudeId();
+                    String depRelation = state.getDocument().getParse().getDependencyRelation(depNodeID);
                     String depDudeName = "EMPTY";
                     if (depDudeID != -1) {
                         depDudeName = semanticTypes.get(depDudeID);
                     }
 
-                    if (!depURI.equals("EMPTY_STRING")) {
-                        featureVector.addToValue("LEXICAL DEP FEATURE: HEAD_URI: " + headURI + " HEAD_TOKEN: " + headToken + " SEM-TYPE: " + dudeName + " CHILD_URI: " + depURI + " CHILD_TOKEN: " + depToken + " DEP-SEM-TYPE: "+depDudeName, 1.0);
+                    if (depURI.equals("EMPTY_STRING")) {
+                        continue;
                     }
+
+                    Set<String> mergedIntervalPOSTAGs = state.getDocument().getParse().getIntervalPOSTagsMerged(tokenID, depNodeID);
+
+                    //handle specific case
+                    //mayor of Tel-Aviv, headquarters of MI6
+                    // NN(s) IN NNP
+                    for (String pattern : mergedIntervalPOSTAGs) {
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
+                    }
+                    
+                    double depSimilarityScore = getSimilarityScore(depToken, depURI);
+                    double headSimilarityScore = getSimilarityScore(headToken, headURI);
+                    double headMatollScore = state.getHiddenVariables().get(tokenID).getCandidate().getMatollScore();
+                    
+                    if(depSimilarityScore >= 0.8 && headSimilarityScore >= 0.8){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-sim >= 0.8", 1.0);
+                    }
+                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.3){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.3", 1.0);
+                    }
+                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.5){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.5", 1.0);
+                    }
+                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.8){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.8", 1.0);
+                    }
+                    if(headURI.endsWith("er")){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head ends with -er", 1.0);
+                    }
+                    
+                    
+
                 }
             }
             if (!siblings.isEmpty()) {
-
                 for (Integer depNodeID : siblings) {
                     String depToken = state.getDocument().getParse().getToken(depNodeID);
                     String depURI = state.getHiddenVariables().get(depNodeID).getCandidate().getUri();
+                    String depPOS = state.getDocument().getParse().getPOSTag(depNodeID);
                     Integer depDudeID = state.getHiddenVariables().get(depNodeID).getDudeId();
+                    String depRelation = state.getDocument().getParse().getSiblingDependencyRelation(depNodeID, tokenID);
+                    
                     String depDudeName = "EMPTY";
                     if (depDudeID != -1) {
                         depDudeName = semanticTypes.get(depDudeID);
                     }
 
-                    if (!depURI.equals("EMPTY_STRING")) {
-                        featureVector.addToValue("LEXICAL SIBLING FEATURE: HEAD_URI: " + headURI + " HEAD_TOKEN: " + headToken + " SEM-TYPE: " + dudeName + " CHILD_URI: " + depURI + " CHILD_TOKEN: " + depToken+ " SIBLING-SEM-TYPE: "+depDudeName, 1.0);
+                    if (depURI.equals("EMPTY_STRING")) {
+                        continue;
+                    }
+
+                    Set<String> mergedIntervalPOSTAGs = state.getDocument().getParse().getIntervalPOSTagsMerged(tokenID, depNodeID);
+
+                    //handle specific case
+                    //mayor of Tel-Aviv, headquarters of MI6
+                    // NN(s) IN NNP
+                    for (String pattern : mergedIntervalPOSTAGs) {
+                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
+                    }
+
+                    
+                    double depSimilarityScore = getSimilarityScore(depToken, depURI);
+                    double headSimilarityScore = getSimilarityScore(headToken, headURI);
+                    double headMatollScore = state.getHiddenVariables().get(tokenID).getCandidate().getMatollScore();
+                    
+                    if(depSimilarityScore >= 0.8 && headSimilarityScore >= 0.8){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-sim >= 0.8", 1.0);
+                    }
+                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.3){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.3", 1.0);
+                    }
+                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.5){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.5", 1.0);
+                    }
+                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.8){
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.8", 1.0);
                     }
                 }
             }
         }
+    }
+    
+    /**
+     * levenstein sim
+     */
+    private double getSimilarityScore(String node, String uri) {
+
+        uri = uri.replace("http://dbpedia.org/resource/", "");
+        uri = uri.replace("http://dbpedia.org/property/", "");
+        uri = uri.replace("http://dbpedia.org/ontology/", "");
+        uri = uri.replace("http://www.w3.org/1999/02/22-rdf-syntax-ns#type###", "");
+
+        uri = uri.replaceAll("@en", "");
+        uri = uri.replaceAll("\"", "");
+        uri = uri.replaceAll("_", " ");
+
+        //replace capital letters with space
+        //to tokenize compount classes e.g. ProgrammingLanguage => Programming Language
+        String temp = "";
+        for (int i = 0; i < uri.length(); i++) {
+            String c = uri.charAt(i) + "";
+            if (c.equals(c.toUpperCase())) {
+                temp += " ";
+            }
+            temp += c;
+        }
+
+        uri = temp.trim().toLowerCase();
+
+        //compute levenstein edit distance similarity and normalize
+        final double weightedEditSimilarity = StringSimilarityMeasures.score(uri, node);
+
+        return weightedEditSimilarity;
     }
 
 }

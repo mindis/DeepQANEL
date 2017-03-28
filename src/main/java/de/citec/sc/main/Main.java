@@ -53,13 +53,13 @@ public class Main {
             args[10] = "-s";//sampling steps
             args[11] = "" + 15;
             args[12] = "-k1";//top k samples to select from during training NEL
-            args[13] = "" + 10;
+            args[13] = "" + 1;
             args[14] = "-k2";//top k samples to select from during training for QA
-            args[15] = "" + 2;
+            args[15] = "" + 1;
             args[16] = "-l1";//top k samples to select from during testing for NEL
-            args[17] = "" + 6;
+            args[17] = "" + 10;
             args[18] = "-l2";//top k samples to select from during testing for QA
-            args[19] = "" + 1;
+            args[19] = "" + 10;
             args[20] = "-w";//max word count
             args[21] = "" + 30;
             args[22] = "-t";//task name
