@@ -60,35 +60,78 @@ public class QAEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, S
 
         Vector featureVector = factor.getFeatureVector();
 
-        //add dependency feature between tokens
-        for (Integer tokenID : state.getDocument().getParse().getNodes().keySet()) {
-            String token = state.getDocument().getParse().getToken(tokenID);
-            String pos = state.getDocument().getParse().getPOSTag(tokenID);
-            Integer dudeID = state.getHiddenVariables().get(tokenID).getDudeId();
+        for (Integer tokenID : state.getSlotVariables().keySet()) {
+            SlotVariable slotVar = state.getSlotVariables().get(tokenID);
 
-            String dudeName = "EMPTY";
+            Integer dudeID = state.getHiddenVariables().get(slotVar.getTokenID()).getDudeId();
+            Integer parentDudeID = state.getHiddenVariables().get(slotVar.getParentTokenID()).getDudeId();
+
+            HiddenVariable headVar = null;
+            String token = "";
+
             if (specialSemanticTypes.containsKey(dudeID)) {
-                dudeName = specialSemanticTypes.get(dudeID);
 
-                SlotVariable slotVar = state.getSlotVariables().get(tokenID);
+                token = state.getDocument().getParse().getToken(slotVar.getTokenID());
 
-                HiddenVariable headVar = state.getHiddenVariables().get(slotVar.getParentTokenID());
+                headVar = state.getHiddenVariables().get(slotVar.getParentTokenID());
 
-                String headURI = headVar.getCandidate().getUri();
-                
-                String headPOS = state.getDocument().getParse().getPOSTag(headVar.getTokenId());
-
-                String range = DBpediaEndpoint.getRange(headURI);
-                String domain = DBpediaEndpoint.getDomain(headURI);
-
-                featureVector.addToValue("QA EDGE - FEATURE: " + " token: " + token + "   head-dudeID: " + headVar.getDudeId() + "  Slot : " + slotVar.getSlotNumber() + " domain : " + domain, 1.0);
-                featureVector.addToValue("QA EDGE - FEATURE: " + " token: " + token + "   head-dudeID: " + headVar.getDudeId() + "  Slot : " + slotVar.getSlotNumber() + " range:  " + range, 1.0);
-
-                String depRelation = state.getDocument().getParse().getDependencyRelation(tokenID);
-                
-                featureVector.addToValue("QA LEXICAL DEP FEATURE: CHILD_TOKEN: " + token + " SEM-TYPE: " + dudeName + " DEP-REL: " + depRelation, 1.0);
             }
+            if (specialSemanticTypes.containsKey(parentDudeID)) {
+                token = state.getDocument().getParse().getToken(slotVar.getParentTokenID());
+                headVar = state.getHiddenVariables().get(slotVar.getTokenID());
+            }
+
+            if(headVar == null){
+                continue;
+            }
+            
+            String headURI = headVar.getCandidate().getUri();
+
+            String range = "", domain = "";
+            if (headURI.startsWith("http://dbpedia.org/property/")) {
+                headURI = headURI.replace("http://dbpedia.org/property/", "http://dbpedia.org/ontology/");
+
+                range = "RDF-Prop - " + DBpediaEndpoint.getRange(headURI);
+                domain = "RDF-Prop - " + DBpediaEndpoint.getDomain(headURI);
+
+            } else {
+                range = DBpediaEndpoint.getRange(headURI);
+                domain = DBpediaEndpoint.getDomain(headURI);
+            }
+
+            if (slotVar.getSlotNumber() == 1) {
+                featureVector.addToValue("QA EDGE - FEATURE: " + " token: " + token + "   head-dudeID: " + headVar.getDudeId() + "  Slot : " + slotVar.getSlotNumber() + " domain : " + domain, 1.0);
+            } else {
+                featureVector.addToValue("QA EDGE - FEATURE: " + " token: " + token + "   head-dudeID: " + headVar.getDudeId() + "  Slot : " + slotVar.getSlotNumber() + " range:  " + range, 1.0);
+            }
+
+            String depRelation = state.getDocument().getParse().getDependencyRelation(tokenID);
+
+            featureVector.addToValue("QA LEXICAL DEP FEATURE: CHILD_TOKEN: " + token + " SEM-DEP: WHAT    DEP-REL: " + depRelation, 1.0);
         }
+//
+//        //add dependency feature between tokens
+//        for (Integer tokenID : state.getDocument().getParse().getNodes().keySet()) {
+//            String token = state.getDocument().getParse().getToken(tokenID);
+//            String pos = state.getDocument().getParse().getPOSTag(tokenID);
+//            Integer dudeID = state.getHiddenVariables().get(tokenID).getDudeId();
+//
+//            String dudeName = "EMPTY";
+//            if (specialSemanticTypes.containsKey(dudeID)) {
+//                dudeName = specialSemanticTypes.get(dudeID);
+//
+//                SlotVariable slotVar = state.getSlotVariables().get(tokenID);
+//
+//                HiddenVariable headVar = null;
+//
+//                if (slotVar.getTokenID() == tokenID) {
+//                    headVar = state.getHiddenVariables().get(slotVar.getParentTokenID());
+//                } else {
+//                    headVar = state.getHiddenVariables().get(slotVar.getTokenID());
+//                }
+//
+//            }
+//        }
     }
 
     /**

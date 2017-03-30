@@ -63,6 +63,7 @@ public class Performance {
         unParsedQuestions.clear();
         parsedQuestions.clear();
     }
+
     public static void logQATrain() {
 
         String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getTrainMaxWordCount();
@@ -100,22 +101,21 @@ public class Performance {
 
     public static void logNELTest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
 
-        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName()+ "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getTestMaxWordCount();
+        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getTestMaxWordCount();
 
         String allStatesAsString = "";
 
-        
         for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
 
-            allStatesAsString += triple.getInstance().toString()+"\n Number of States : "+triple.getStates().size()+"\n";
-            
+            allStatesAsString += triple.getInstance().toString() + "\n Number of States : " + triple.getStates().size() + "\n";
+
             for (State state : triple.getStates()) {
-                allStatesAsString += "State : "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+"\n\n--------------------------------------------------------\n";
+                allStatesAsString += "State : " + triple.getStates().indexOf(state) + "\n" + state.toLessDetailedString() + "\n\n--------------------------------------------------------\n";
             }
-            
+
             allStatesAsString += "========================================================\n";
         }
-        
+
         String correctInstances = "";
         String inCorrectInstances = "";
 
@@ -173,11 +173,11 @@ public class Performance {
         FileFactory.writeListToFile(outputDir + "/unParsedInstances_" + fileName + ".txt", inCorrectInstances, false);
 
         FileFactory.writeListToFile(outputDir + "/states_" + fileName + ".txt", allStatesAsString, false);
-        
+
         double correct = c / (double) testResults.size();
         double inCorrect = (testResults.size() - c) / (double) testResults.size();
 
-        System.out.println("Test results with Top-k: "+ProjectConfiguration.getNELTestBeamSize()+"\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
+        System.out.println("Test results with Top-k: " + ProjectConfiguration.getNELTestBeamSize() + "\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
         System.out.println("Incorrect predictions: " + (testResults.size() - c) + "/" + testResults.size() + " = " + inCorrect);
         System.out.println("MACRO F1: " + MACROF1);
     }
@@ -190,13 +190,13 @@ public class Performance {
 
         for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
 
-            allStatesAsString += triple.getInstance().toString()+"\n Number of States : "+triple.getStates().size()+"\n\n";
-            
+            allStatesAsString += triple.getInstance().toString() + "\n Number of States : " + triple.getStates().size() + "\n\n";
+
             for (State state : triple.getStates()) {
                 String query = QueryConstructor.getSPARQLQuery(state);
-                allStatesAsString += "State : "+triple.getStates().indexOf(state)+ "\n"+state.toLessDetailedString()+ "\nQuery:"+query+ "\n\n------------------------------------------------\n";
+                allStatesAsString += "State : " + triple.getStates().indexOf(state) + "\n" + state.toLessDetailedString() + "\nQuery:" + query + "\n\n------------------------------------------------\n";
             }
-            
+
             allStatesAsString += "========================================================\n";
         }
 
@@ -219,14 +219,14 @@ public class Performance {
             }
 
             overAllScore += maxScore;
-            
+
             String query = QueryConstructor.getSPARQLQuery(maxState);
 
             if (maxScore == 1.0) {
-                correctInstances += maxState + "\nScore: " + maxScore + "\nConstructed Query: \n"+query+ "\n========================================================================\n";
+                correctInstances += maxState + "\nScore: " + maxScore + "\nConstructed Query: \n" + query + "\n========================================================================\n";
                 c++;
             } else {
-                inCorrectInstances += maxState + "\nScore: " + maxScore + "\nConstructed Query: \n"+query+ "\n========================================================================\n";
+                inCorrectInstances += maxState + "\nScore: " + maxScore + "\nConstructed Query: \n" + query + "\n========================================================================\n";
             }
         }
 
@@ -249,16 +249,47 @@ public class Performance {
 
         FileFactory.writeListToFile(outputDir + "/parsedInstances_" + fileName + ".txt", correctInstances, false);
         FileFactory.writeListToFile(outputDir + "/unParsedInstances_" + fileName + ".txt", inCorrectInstances, false);
-        
+
         //states
         FileFactory.writeListToFile(outputDir + "/states_" + fileName + ".txt", allStatesAsString, false);
 
-        double correct = c / (double) testResults.size();
-        double inCorrect = (testResults.size() - c) / (double) testResults.size();
+        System.out.println("Test results with Top-k: " + ProjectConfiguration.getQATestBeamSize() + "\n\n");
+        System.out.println("MACRO F1: " + MACROF1 + "\n\n");
 
-        System.out.println("Test results with Top-k: "+ProjectConfiguration.getQATestBeamSize()+"\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
-        System.out.println("Incorrect predictions: " + (testResults.size() - c) + "/" + testResults.size() + " = " + inCorrect);
-        System.out.println("MACRO F1: " + MACROF1);
+        for (int i = 1; i <= 10; i++) {
+            int z = getCorrectInstanceNumber(testResults, function, i);
+
+            double correct = z / (double) testResults.size();
+            double inCorrect = (testResults.size() - z) / (double) testResults.size();
+
+            System.out.println("Top " + i + " states");
+            System.out.println("Correct predictions: " + z + "/" + testResults.size() + " = " + correct);
+            System.out.println("Incorrect predictions: " + (testResults.size() - z) + "/" + testResults.size() + " = " + inCorrect);
+            System.out.println("\n");
+        }
+
+    }
+
+    private static int getCorrectInstanceNumber(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function, int topK) {
+
+        int c = 0;
+        for (SampledMultipleInstance<AnnotatedDocument, String, State> triple : testResults) {
+
+            List<State> states = triple.getStates();
+
+            states = states.subList(0, Math.min(states.size(), topK));
+
+            for (State state : states) {
+
+                double s = function.score(state, triple.getGoldResult());
+                if (s == 1.0) {
+                    c++;
+                    break;
+                }
+            }
+        }
+
+        return c;
     }
 
     public static void addParsed(String s, String q) {

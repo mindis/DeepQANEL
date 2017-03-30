@@ -633,13 +633,12 @@ public class DBpediaEndpoint {
                 + "SELECT ?d \n"
                 + "WHERE {\n"
                 + "        <" + property + "> rdfs:range ?d . \n"
-                + "FILTER (?d != <http://dbpedia.org/ontology/Agent>) \n"
+//                + "FILTER (?d != <http://dbpedia.org/ontology/Agent>) \n"
                 + "}";
 
         List<String> result = runQuery(query);
 
         if (result == null) {
-            System.out.println("Range null exception" + property);
             return "UNKNOWN";
         }
 
@@ -659,13 +658,12 @@ public class DBpediaEndpoint {
                 + "SELECT ?d \n"
                 + "WHERE {\n"
                 + "        <" + property + "> rdfs:domain ?d . \n"
-                + "FILTER (?d != <http://dbpedia.org/ontology/Agent>) \n"
+//                + "FILTER (?d != <http://dbpedia.org/ontology/Agent>) \n"
                 + "}";
 
         List<String> result = runQuery(query);
 
         if (result == null) {
-            System.out.println("Range null exception" + property);
             return "UNKNOWN";
         }
 

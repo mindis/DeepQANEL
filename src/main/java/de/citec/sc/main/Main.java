@@ -42,9 +42,9 @@ public class Main {
 
             args = new String[26];
             args[0] = "-d1";//query dataset
-            args[1] = "qaldSubset";//qald6Train  qald6Test   qaldSubset
+            args[1] = "qald6Train";//qald6Train  qald6Test   qaldSubset
             args[2] = "-d2";  //test dataset
-            args[3] = "qaldSubset";//qald6Train  qald6Test   qaldSubset
+            args[3] = "qald6Test";//qald6Train  qald6Test   qaldSubset
             args[4] = "-m1";//manual lexicon
             args[5] = "true";//true, false
             args[6] = "-m2";//matoll
@@ -62,9 +62,9 @@ public class Main {
             args[18] = "-l2";//top k samples to select from during testing for QA
             args[19] = "" + 10;
             args[20] = "-w1";//max word count - train
-            args[21] = "" + 3;
+            args[21] = "" + 6;
             args[22] = "-w2";//max word count - test
-            args[23] = "" + 3;
+            args[23] = "" + 30;
             args[24] = "-i";//index
             args[25] = "lucene";//lucene, memory
         }
