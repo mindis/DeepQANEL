@@ -6,6 +6,7 @@
 package de.citec.sc.template;
 
 import de.citec.sc.corpus.AnnotatedDocument;
+import de.citec.sc.utils.DBpediaEndpoint;
 import de.citec.sc.variable.HiddenVariable;
 
 import de.citec.sc.variable.State;
@@ -99,29 +100,58 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
                     //mayor of Tel-Aviv, headquarters of MI6
                     // NN(s) IN NNP
                     for (String pattern : mergedIntervalPOSTAGs) {
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
                     }
                     
                     double depSimilarityScore = getSimilarityScore(depToken, depURI);
+                    double depDBpediaScore = state.getHiddenVariables().get(depNodeID).getCandidate().getDbpediaScore();
+                    
                     double headSimilarityScore = getSimilarityScore(headToken, headURI);
                     double headMatollScore = state.getHiddenVariables().get(tokenID).getCandidate().getMatollScore();
                     
-                    if(depSimilarityScore >= 0.8 && headSimilarityScore >= 0.8){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-sim >= 0.8", 1.0);
-                    }
-                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.3){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.3", 1.0);
-                    }
-                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.5){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.5", 1.0);
-                    }
-                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.8){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.8", 1.0);
-                    }
-                    if(headURI.endsWith("er")){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head ends with -er", 1.0);
-                    }
+                    double score = (Math.max(depSimilarityScore, depDBpediaScore)) * 0.7 + 0.3 * (Math.max(headMatollScore, headSimilarityScore));
                     
+                    
+                    
+                    if(headURI.contains("ontology")){
+//                        score += 0.1;
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
+                        
+                        
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+                    }
+                    else{
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
+                        
+                        
+                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+                     }
+                    
+                    
+                    
+                    
+//                    if(depSimilarityScore >= 0.8 && headSimilarityScore >= 0.8){
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-sim >= 0.8", 1.0);
+//                    }
+//                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.3){
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.3", 1.0);
+//                    }
+//                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.5){
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.5", 1.0);
+//                    }
+//                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.8){
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.8", 1.0);
+//                    }
+//                    if(headURI.endsWith("er")){
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head ends with -er", 1.0);
+//                    }
+//                    
                     
 
                 }
@@ -149,26 +179,37 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
                     //mayor of Tel-Aviv, headquarters of MI6
                     // NN(s) IN NNP
                     for (String pattern : mergedIntervalPOSTAGs) {
-                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
                     }
 
                     
+                    
+                    
                     double depSimilarityScore = getSimilarityScore(depToken, depURI);
+                    double depDBpediaScore = state.getHiddenVariables().get(depNodeID).getCandidate().getDbpediaScore();
                     double headSimilarityScore = getSimilarityScore(headToken, headURI);
                     double headMatollScore = state.getHiddenVariables().get(tokenID).getCandidate().getMatollScore();
                     
-                    if(depSimilarityScore >= 0.8 && headSimilarityScore >= 0.8){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-sim >= 0.8", 1.0);
+                    
+                    double score = (Math.max(depSimilarityScore, depDBpediaScore)) * 0.7 + 0.3 * (Math.max(headMatollScore, headSimilarityScore));
+                    
+                    if(headURI.contains("ontology")){
+//                        score += 0.1;
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
+                        
+                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
                     }
-                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.3){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.3", 1.0);
-                    }
-                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.5){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.5", 1.0);
-                    }
-                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.8){
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.8", 1.0);
-                    }
+                    else{
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
+                        
+                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+                     }
                 }
             }
         }

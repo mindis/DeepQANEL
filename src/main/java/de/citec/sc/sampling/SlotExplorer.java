@@ -39,6 +39,10 @@ public class SlotExplorer implements Explorer<State> {
 
     @Override
     public List getNextStates(State currentState) {
+        return createNewtStates2(currentState);
+    }
+    
+    private List createNewtStates(State currentState) {
         List<State> newStates = new ArrayList<>();
 
         for (int indexOfNode : currentState.getDocument().getParse().getNodes().keySet()) {
@@ -321,7 +325,7 @@ public class SlotExplorer implements Explorer<State> {
         return newStates;
     }
     
-    public List getNextStates2(State currentState) {
+    private List createNewtStates2(State currentState) {
         List<State> newStates = new ArrayList<>();
 
         for (int indexOfNode : currentState.getDocument().getParse().getNodes().keySet()) {
@@ -376,12 +380,13 @@ public class SlotExplorer implements Explorer<State> {
                                     s.addHiddenVariable(indexOfNode, indexOfDepDude, emptyInstance);
 
                                     //add as slot 2 since 1 taken by another node
-                                    s.addSlotVariable(indexOfNode, indexOfNode, 2);
+                                    s.addSlotVariable(indexOfNode, headNode, 2);
 
                                     if (!s.equals(currentState) && !newStates.contains(s)) {
                                         newStates.add(s);
                                         
                                         hasValidParent = true;
+                                        break;
                                     }
                                 } else if (!usedSlots.contains(1) && usedSlots.contains(2)) {
                                     State s = new State(currentState);
@@ -391,12 +396,13 @@ public class SlotExplorer implements Explorer<State> {
                                     s.addHiddenVariable(indexOfNode, indexOfDepDude, emptyInstance);
 
                                     //add as slot 2 since 1 taken by another node
-                                    s.addSlotVariable(indexOfNode, indexOfNode, 1);
+                                    s.addSlotVariable(indexOfNode, headNode, 1);
 
                                     if (!s.equals(currentState) && !newStates.contains(s)) {
                                         newStates.add(s);
                                         
                                         hasValidParent = true;
+                                        break;
                                     }
                                 } else {
                                     State s = new State(currentState);
@@ -406,7 +412,7 @@ public class SlotExplorer implements Explorer<State> {
                                     s.addHiddenVariable(indexOfNode, indexOfDepDude, emptyInstance);
 
                                     //add as slot 2 since 1 taken by another node
-                                    s.addSlotVariable(indexOfNode, indexOfNode, 1);
+                                    s.addSlotVariable(indexOfNode, headNode, 1);
 
                                     if (!s.equals(currentState) && !newStates.contains(s)) {
                                         newStates.add(s);

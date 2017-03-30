@@ -8,6 +8,7 @@ import de.citec.sc.learning.QueryConstructor;
 import de.citec.sc.qald.QALDCorpusLoader;
 import de.citec.sc.query.CandidateRetriever;
 import de.citec.sc.query.CandidateRetrieverOnLucene;
+import de.citec.sc.query.CandidateRetrieverOnMemory;
 import de.citec.sc.query.ManualLexicon;
 import de.citec.sc.query.Search;
 import de.citec.sc.template.QATemplateFactory;
@@ -39,17 +40,17 @@ public class Main {
 
         } else {
 
-            args = new String[24];
+            args = new String[26];
             args[0] = "-d1";//query dataset
-            args[1] = "qald6Train";//qald6Train  qald6Test   qaldSubset
+            args[1] = "qaldSubset";//qald6Train  qald6Test   qaldSubset
             args[2] = "-d2";  //test dataset
-            args[3] = "qald6Test";//qald6Train  qald6Test   qaldSubset
+            args[3] = "qaldSubset";//qald6Train  qald6Test   qaldSubset
             args[4] = "-m1";//manual lexicon
             args[5] = "true";//true, false
             args[6] = "-m2";//matoll
             args[7] = "true";//true, false
             args[8] = "-e";//epochs
-            args[9] = "" + 1;
+            args[9] = "" + 4;
             args[10] = "-s";//sampling steps
             args[11] = "" + 15;
             args[12] = "-k1";//top k samples to select from during training NEL
@@ -60,20 +61,24 @@ public class Main {
             args[17] = "" + 10;
             args[18] = "-l2";//top k samples to select from during testing for QA
             args[19] = "" + 10;
-            args[20] = "-w";//max word count
-            args[21] = "" + 30;
-            args[22] = "-t";//task name
-            args[23] = "linking";//qa, linking
+            args[20] = "-w1";//max word count - train
+            args[21] = "" + 3;
+            args[22] = "-w2";//max word count - test
+            args[23] = "" + 3;
+            args[24] = "-i";//index
+            args[25] = "lucene";//lucene, memory
         }
 
         ProjectConfiguration.loadConfigurations(args);
+        
+        log.info(ProjectConfiguration.getAllParameters());
 
         //load index, initialize postag lists etc.        
         initialize();
 
         //load training and testing corpus
-        List<AnnotatedDocument> trainDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTrainingDatasetName()));
-        List<AnnotatedDocument> testDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTestDatasetName()));
+        List<AnnotatedDocument> trainDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTrainingDatasetName()), ProjectConfiguration.getTrainMaxWordCount());
+        List<AnnotatedDocument> testDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTestDatasetName()), ProjectConfiguration.getTestMaxWordCount());
         
         System.out.println("Training on "+ProjectConfiguration.getTrainingDatasetName()+" with "+trainDocuments.size());
         System.out.println("Testing on "+ProjectConfiguration.getTestDatasetName()+" with "+testDocuments.size());
@@ -83,7 +88,7 @@ public class Main {
             List<Model<AnnotatedDocument, State>> trainedModels = Pipeline.train(trainDocuments);
 
             for (Model<AnnotatedDocument, State> m1 : trainedModels) {
-                m1.saveModelToFile("models", "model");
+                m1.saveModelToFile("models", "model_" + ProjectConfiguration.getTrainMaxWordCount());
             }
 
             Pipeline.test(trainedModels, testDocuments);
@@ -98,7 +103,15 @@ public class Main {
         
         System.out.println("Initialization process has started ....");
 
-        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+        CandidateRetriever retriever = null;
+        
+        if(ProjectConfiguration.getIndex().equals("lucene")){
+            retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+        }
+        else{
+            retriever = new CandidateRetrieverOnMemory("rawIndexFiles/resourceFiles", "rawIndexFiles/classFiles", "rawIndexFiles/predicateFiles", "rawIndexFiles/matollFiles", "rawIndexFiles/matollAdjectiveFiles");
+        }
+        
 
         WordNetAnalyzer wordNet = new WordNetAnalyzer("src/main/resources/WordNet-3.0/dict");
 
@@ -168,7 +181,7 @@ public class Main {
         System.out.println("Initialization process has ended ....");
     }
 
-    private static List<AnnotatedDocument> getDocuments(QALDCorpusLoader.Dataset dataset) {
+    private static List<AnnotatedDocument> getDocuments(QALDCorpusLoader.Dataset dataset, int maxWordCount) {
 
         boolean includeYAGO = false;
         boolean includeAggregation = false;
@@ -185,7 +198,7 @@ public class Main {
             if (DBpediaEndpoint.isValidQuery(d1.getGoldQueryString(), false)) {
 
                 d1.getParse().mergeEdges();
-                if (d1.getParse().getNodes().size() <= ProjectConfiguration.getMaxWordCount()) {
+                if (d1.getParse().getNodes().size() <= maxWordCount) {
                     documents.add(d1);
                 }
             } else {

@@ -35,12 +35,13 @@ public class ProjectConfiguration {
     private static final String PARAM_SETTING_BEAMSIZE_TRAINING_QA = "-k2";
     private static final String PARAM_SETTING_BEAMSIZE_TEST_NEL = "-l1";
     private static final String PARAM_SETTING_BEAMSIZE_TEST_QA = "-l2";
-    private static final String PARAM_SETTING_TASK = "-t";
-    private static final String PARAM_SETTING_MAX_WORD_COUNT = "-w";
+    private static final String PARAM_SETTING_INDEX = "-i";
+    private static final String PARAM_SETTING_TRAIN_MAX_WORD_COUNT = "-w1";
+    private static final String PARAM_SETTING_TEST_MAX_WORD_COUNT = "-w2";
 
-    public static String getTask() {
+    public static String getIndex() {
 
-        return PARAMETERS.get(PARAM_SETTING_TASK);
+        return PARAMETERS.get(PARAM_SETTING_INDEX);
     }
 
     public static String getTrainingDatasetName() {
@@ -72,8 +73,13 @@ public class ProjectConfiguration {
 
         return numberOfEpochs;
     }
-    public static int getMaxWordCount() {
-        int numberOfEpochs = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_MAX_WORD_COUNT));
+    public static int getTrainMaxWordCount() {
+        int numberOfEpochs = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_TRAIN_MAX_WORD_COUNT));
+
+        return numberOfEpochs;
+    }
+    public static int getTestMaxWordCount() {
+        int numberOfEpochs = Integer.parseInt(PARAMETERS.get(PARAM_SETTING_TEST_MAX_WORD_COUNT));
 
         return numberOfEpochs;
     }
@@ -113,5 +119,14 @@ public class ProjectConfiguration {
                 }
             }
         }
+    }
+
+    
+    public static String getAllParameters() {
+        String s = "";
+        for(String k : PARAMETERS.keySet()){
+            s += k + "--"+PARAMETERS.get(k)+"\n";
+        }
+        return s;
     }
 }

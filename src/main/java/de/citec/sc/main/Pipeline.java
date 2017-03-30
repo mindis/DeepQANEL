@@ -16,12 +16,13 @@ import de.citec.sc.learning.QAObjectiveFunction;
 import de.citec.sc.learning.QATrainer;
 import de.citec.sc.sampling.EdgeExplorer;
 import de.citec.sc.sampling.MyBeamSearchSampler;
+import de.citec.sc.sampling.QABeamSearchSampler;
+import de.citec.sc.sampling.SamplingStrategies;
 import de.citec.sc.sampling.SlotExplorer;
-import de.citec.sc.sampling.SpecialSemanticsExplorer;
 import de.citec.sc.sampling.StateInitializer;
 import de.citec.sc.template.NELEdgeTemplate;
 import de.citec.sc.template.NELLexicalTemplate;
-import de.citec.sc.template.QALexicalTemplate;
+import de.citec.sc.template.QAEdgeTemplate;
 import de.citec.sc.template.QATemplateFactory;
 import de.citec.sc.utils.Performance;
 import de.citec.sc.utils.ProjectConfiguration;
@@ -284,7 +285,8 @@ public class Pipeline {
         List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
+//        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
+        templates.add(new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes));
 
         /*
          * Create the scorer object that computes a score from the factors'
@@ -349,9 +351,10 @@ public class Pipeline {
         /*
          * 
          */
-        MyBeamSearchSampler<AnnotatedDocument, State, String> sampler = new MyBeamSearchSampler<>(model, objective, explorers,
+        QABeamSearchSampler<AnnotatedDocument, State, String> sampler = new QABeamSearchSampler<>(model, objective, explorers,
                 scoreStoppingCriterion);
-        sampler.setTrainSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_QA_TRAINING, s -> s.getObjectiveScore()));
+//        sampler.setTrainSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_QA_TRAINING, s -> s.getObjectiveScore()));
+        sampler.setTrainSamplingStrategy(SamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_QA_TRAINING, s -> s.getObjectiveScore()));
         sampler.setTrainAcceptStrategy(AcceptStrategies.strictObjectiveAccept());
 
 //        MySampler<AnnotatedDocument, State, String> sampler = new MySampler<>(model, objective, explorers,
@@ -386,7 +389,7 @@ public class Pipeline {
         }
 
         //train the model
-        List<SampledMultipleInstance<AnnotatedDocument, String, State>> finalStates = trainer.specialTrain(sampler, nelInstances, learner, NUMBER_OF_EPOCHS);
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> finalStates = trainer.train(sampler, nelInstances, learner, NUMBER_OF_EPOCHS);
 
         System.out.println("\nQA Model :\n" + model.toDetailedString());
 
@@ -516,7 +519,8 @@ public class Pipeline {
         List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
 //        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
 //        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
+//        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
+        templates.add(new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes));
 
         /*
          * initialize QATemplateFactory
@@ -569,9 +573,10 @@ public class Pipeline {
         /*
          * 
          */
-        MyBeamSearchSampler<AnnotatedDocument, State, String> sampler = new MyBeamSearchSampler<>(model, objective, explorers,
+        QABeamSearchSampler<AnnotatedDocument, State, String> sampler = new QABeamSearchSampler<>(model, objective, explorers,
                 scoreStoppingCriterion);
-        sampler.setTestSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByModel(BEAM_SIZE_QA_TEST, s -> s.getModelScore()));
+//        sampler.setTestSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByModel(BEAM_SIZE_QA_TEST, s -> s.getModelScore()));
+        sampler.setTestSamplingStrategy(SamplingStrategies.greedyBeamSearchSamplingStrategyByModel(BEAM_SIZE_QA_TEST, s -> s.getModelScore()));
         sampler.setTestAcceptStrategy(AcceptStrategies.strictModelAccept());
 
         log.info("####################");
@@ -591,7 +596,7 @@ public class Pipeline {
          */
         QATrainer trainer = new QATrainer();
 
-        List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults = trainer.specialTest(sampler, nelInstances);
+        List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults = trainer.test(sampler, nelInstances);
         /*
          * Since the test function does not compute the objective score of its
          * predictions, we do that here, manually, before we print the results.

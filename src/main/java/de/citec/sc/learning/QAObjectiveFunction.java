@@ -8,6 +8,7 @@ package de.citec.sc.learning;
 import de.citec.sc.evaluator.AnswerEvaluator;
 import de.citec.sc.evaluator.QueryEvaluator;
 import de.citec.sc.qald.SPARQLParser;
+import de.citec.sc.utils.DBpediaEndpoint;
 
 import de.citec.sc.variable.State;
 
@@ -40,6 +41,11 @@ public class QAObjectiveFunction extends ObjectiveFunction<State, String> implem
         if (constructedQuery.trim().isEmpty()) {
             return 0;
         }
+        
+        if(!DBpediaEndpoint.isValidQuery(constructedQuery, true)){
+            return 0;
+        }
+        
         if (SPARQLParser.extractTriplesFromQuery(constructedQuery).isEmpty()) {
             return 0;
         }
@@ -68,6 +74,11 @@ public class QAObjectiveFunction extends ObjectiveFunction<State, String> implem
         if (constructedQuery.trim().isEmpty()) {
             return 0;
         }
+        
+        if(!DBpediaEndpoint.isValidQuery(constructedQuery, true)){
+            return 0;
+        }
+        
         if (SPARQLParser.extractTriplesFromQuery(constructedQuery).isEmpty()) {
             return 0;
         }

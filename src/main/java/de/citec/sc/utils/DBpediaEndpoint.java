@@ -7,6 +7,8 @@ package de.citec.sc.utils;
 
 
 
+import de.citec.sc.learning.QueryConstructor;
+import de.citec.sc.variable.State;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -421,6 +423,20 @@ public class DBpediaEndpoint {
     /**
      * returns true if the SPARQL query derived from the state returns an answer
      *
+     * @param state State
+     * @param boolean isTraining (if true, the query will be transformed into
+     * SELECT {...} LIMIT 1, to speed up query time
+     * @return boolean
+     */
+    public static boolean isValidState(State state) {
+        
+        String query = QueryConstructor.getSPARQLQuery(state);
+        
+        return isValidQuery(query, true);
+    }
+    /**
+     * returns true if the SPARQL query returns an answer
+     *
      * @param String query
      * @param boolean isTraining (if true, the query will be transformed into
      * SELECT {...} LIMIT 1, to speed up query time
@@ -624,14 +640,40 @@ public class DBpediaEndpoint {
 
         if (result == null) {
             System.out.println("Range null exception" + property);
-            return "";
+            return "UNKNOWN";
         }
 
         if (!result.isEmpty()) {
             return result.get(0);
         }
 
-        return "";
+        return "UNKNOWN";
+
+    }
+    public static String getDomain(String property) {
+
+        String query = "PREFIX dbo: <http://dbpedia.org/ontology/>\n"
+                + "PREFIX res: <http://dbpedia.org/resource/>\n"
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+                + "SELECT ?d \n"
+                + "WHERE {\n"
+                + "        <" + property + "> rdfs:domain ?d . \n"
+                + "FILTER (?d != <http://dbpedia.org/ontology/Agent>) \n"
+                + "}";
+
+        List<String> result = runQuery(query);
+
+        if (result == null) {
+            System.out.println("Range null exception" + property);
+            return "UNKNOWN";
+        }
+
+        if (!result.isEmpty()) {
+            return result.get(0);
+        }
+
+        return "UNKNOWN";
 
     }
 

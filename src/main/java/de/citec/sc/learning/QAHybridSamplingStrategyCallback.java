@@ -4,6 +4,7 @@ package de.citec.sc.learning;
 
 import de.citec.sc.learning.QATrainer.EpochCallback;
 import de.citec.sc.sampling.MyBeamSearchSampler;
+import de.citec.sc.sampling.QABeamSearchSampler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import sampling.BeamSearchSampler;
@@ -11,12 +12,12 @@ import sampling.samplingstrategies.BeamSearchSamplingStrategies;
 import variables.AbstractState;
 
 public class QAHybridSamplingStrategyCallback<StateT extends AbstractState<?>> implements EpochCallback {
-	private MyBeamSearchSampler<?, StateT, ?> sampler;
+	private QABeamSearchSampler<?, StateT, ?> sampler;
 	private int beamSize = 10;
 
         private static Logger log = LogManager.getFormatterLogger();
         
-	public QAHybridSamplingStrategyCallback(MyBeamSearchSampler<?, StateT, ?> sampler, int beamSize) {
+	public QAHybridSamplingStrategyCallback(QABeamSearchSampler<?, StateT, ?> sampler, int beamSize) {
 		super();
 		this.sampler = sampler;
 		this.beamSize = beamSize;

@@ -31,7 +31,7 @@ public class Performance {
 
     public static void logNELTrain() {
 
-        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getTrainMaxWordCount();
 
         //log based on word count
         String p = parsedQuestions.size() + "/" + (parsedQuestions.size() + unParsedQuestions.size()) + "\n\n";
@@ -65,7 +65,7 @@ public class Performance {
     }
     public static void logQATrain() {
 
-        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTrainingDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getTrainMaxWordCount();
 
         //log based on word count
         String p = parsedQuestions.size() + "/" + (parsedQuestions.size() + unParsedQuestions.size()) + "\n\n";
@@ -100,7 +100,7 @@ public class Performance {
 
     public static void logNELTest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
 
-        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName()+ "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "NEL_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName()+ "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getTestMaxWordCount();
 
         String allStatesAsString = "";
 
@@ -177,14 +177,14 @@ public class Performance {
         double correct = c / (double) testResults.size();
         double inCorrect = (testResults.size() - c) / (double) testResults.size();
 
-        System.out.println("Test results\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
+        System.out.println("Test results with Top-k: "+ProjectConfiguration.getNELTestBeamSize()+"\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
         System.out.println("Incorrect predictions: " + (testResults.size() - c) + "/" + testResults.size() + " = " + inCorrect);
         System.out.println("MACRO F1: " + MACROF1);
     }
 
     public static void logQATest(List<SampledMultipleInstance<AnnotatedDocument, String, State>> testResults, ObjectiveFunction function) {
 
-        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getMaxWordCount();
+        String fileName = "QA_Manual_" + ProjectConfiguration.useManualLexicon() + "_Matoll_" + ProjectConfiguration.useMatoll() + "_Dataset_" + ProjectConfiguration.getTestDatasetName() + "_Epoch_" + ProjectConfiguration.getNumberOfEpochs() + "_Word_" + ProjectConfiguration.getTestMaxWordCount();
 
         String allStatesAsString = "";
 
@@ -256,7 +256,7 @@ public class Performance {
         double correct = c / (double) testResults.size();
         double inCorrect = (testResults.size() - c) / (double) testResults.size();
 
-        System.out.println("Test results\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
+        System.out.println("Test results with Top-k: "+ProjectConfiguration.getQATestBeamSize()+"\n\nCorrect predictions: " + c + "/" + testResults.size() + " = " + correct);
         System.out.println("Incorrect predictions: " + (testResults.size() - c) + "/" + testResults.size() + " = " + inCorrect);
         System.out.println("MACRO F1: " + MACROF1);
     }

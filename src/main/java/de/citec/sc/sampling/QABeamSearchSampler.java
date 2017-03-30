@@ -31,18 +31,18 @@ import sampling.stoppingcriterion.BeamSearchStoppingCriterion;
 import utility.Utils;
 import variables.AbstractState;
 
-public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<InstanceT>, ResultT>
+public class QABeamSearchSampler<InstanceT, StateT extends AbstractState<InstanceT>, ResultT>
         implements IBeamSearchSampler<StateT, ResultT> {
 
     public interface StepCallback {
 
         default <InstanceT, StateT extends AbstractState<InstanceT>> void onStartStep(
-                MyBeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
+                QABeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
                 List<StateT> initialStates) {
         }
 
         default <InstanceT, StateT extends AbstractState<InstanceT>> void onEndStep(
-                MyBeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
+                QABeamSearchSampler<InstanceT, StateT, ?> sampler, int step, int e, int numberOfExplorers,
                 List<StateT> initialStates, List<StateT> currentState) {
 
         }
@@ -104,7 +104,7 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
      * @param explorers
      * @param stoppingCriterion
      */
-    public MyBeamSearchSampler(Model<InstanceT, StateT> model, ObjectiveFunction<StateT, ResultT> objective,
+    public QABeamSearchSampler(Model<InstanceT, StateT> model, ObjectiveFunction<StateT, ResultT> objective,
             List<Explorer<StateT>> explorers, BeamSearchStoppingCriterion<StateT> stoppingCriterion) {
         super();
         this.model = model;

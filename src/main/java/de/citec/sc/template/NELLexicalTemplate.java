@@ -76,47 +76,53 @@ public class NELLexicalTemplate extends AbstractTemplate<AnnotatedDocument, Stat
                 featureVector.addToValue("LEXICAL FEATURE:  EXCLUDE THIS WORD: URI: " + headURI + " TOKEN: " + headToken + " POS : " + headPOS, 1.0);
             }
 
-            List<Integer> dependentNodes = state.getDocument().getParse().getDependentEdges(tokenID, validPOSTags, frequentWordsToExclude);
-            List<Integer> siblings = state.getDocument().getParse().getSiblings(tokenID, validPOSTags, frequentWordsToExclude);
+            if (dudeName.equals("Property") || dudeName.equals("RestrictionClass")) {
+                
+                List<Integer> dependentNodes = state.getDocument().getParse().getDependentEdges(tokenID, validPOSTags, frequentWordsToExclude);
+                List<Integer> siblings = state.getDocument().getParse().getSiblings(tokenID, validPOSTags, frequentWordsToExclude);
 
-            //add lexical feature only for nouns, noun phrases etc.
-            if (dependentNodes.isEmpty() && (headPOS.startsWith("NN") || headPOS.startsWith("JJ"))) {
+                //add lexical feature only for nouns, noun phrases etc.
+                if (dependentNodes.isEmpty() && (headPOS.startsWith("NN") || headPOS.startsWith("JJ"))) {
 //                featureVector.addToValue("LEXICAL FEATURE: URI: " + headURI + " TOKEN: " + headToken + " POS : " + headPOS + " SEM-TYPE: " + dudeName, 1.0);
-            }
+                }
 
-            if (!dependentNodes.isEmpty()) {
+                if (!dependentNodes.isEmpty()) {
 
-                for (Integer depNodeID : dependentNodes) {
-                    String depToken = state.getDocument().getParse().getToken(depNodeID);
-                    String depURI = state.getHiddenVariables().get(depNodeID).getCandidate().getUri();
-                    Integer depDudeID = state.getHiddenVariables().get(depNodeID).getDudeId();
-                    String depDudeName = "EMPTY";
-                    if (depDudeID != -1) {
-                        depDudeName = semanticTypes.get(depDudeID);
+                    for (Integer depNodeID : dependentNodes) {
+                        String depToken = state.getDocument().getParse().getToken(depNodeID);
+                        String depURI = state.getHiddenVariables().get(depNodeID).getCandidate().getUri();
+                        Integer depDudeID = state.getHiddenVariables().get(depNodeID).getDudeId();
+                        String depDudeName = "EMPTY";
+                        if (depDudeID != -1) {
+                            depDudeName = semanticTypes.get(depDudeID);
+                        }
+
+                        if (!depURI.equals("EMPTY_STRING")) {
+                            featureVector.addToValue("LEXICAL DEP FEATURE: HEAD_URI: " + headURI + " HEAD_TOKEN: " + headToken + " SEM-TYPE: " + dudeName + " CHILD_URI: " + depURI + " CHILD_TOKEN: " + depToken + " DEP-SEM-TYPE: " + depDudeName, 1.0);
+                        }
                     }
+                }
+                if (!siblings.isEmpty()) {
 
-                    if (!depURI.equals("EMPTY_STRING")) {
-                        featureVector.addToValue("LEXICAL DEP FEATURE: HEAD_URI: " + headURI + " HEAD_TOKEN: " + headToken + " SEM-TYPE: " + dudeName + " CHILD_URI: " + depURI + " CHILD_TOKEN: " + depToken + " DEP-SEM-TYPE: "+depDudeName, 1.0);
+                    for (Integer depNodeID : siblings) {
+                        String depToken = state.getDocument().getParse().getToken(depNodeID);
+                        String depURI = state.getHiddenVariables().get(depNodeID).getCandidate().getUri();
+                        Integer depDudeID = state.getHiddenVariables().get(depNodeID).getDudeId();
+                        String depDudeName = "EMPTY";
+                        if (depDudeID != -1) {
+                            depDudeName = semanticTypes.get(depDudeID);
+                        }
+
+                        if (!depURI.equals("EMPTY_STRING")) {
+                            featureVector.addToValue("LEXICAL SIBLING FEATURE: HEAD_URI: " + headURI + " HEAD_TOKEN: " + headToken + " SEM-TYPE: " + dudeName + " CHILD_URI: " + depURI + " CHILD_TOKEN: " + depToken + " SIBLING-SEM-TYPE: " + depDudeName, 1.0);
+                        }
                     }
                 }
             }
-            if (!siblings.isEmpty()) {
 
-                for (Integer depNodeID : siblings) {
-                    String depToken = state.getDocument().getParse().getToken(depNodeID);
-                    String depURI = state.getHiddenVariables().get(depNodeID).getCandidate().getUri();
-                    Integer depDudeID = state.getHiddenVariables().get(depNodeID).getDudeId();
-                    String depDudeName = "EMPTY";
-                    if (depDudeID != -1) {
-                        depDudeName = semanticTypes.get(depDudeID);
-                    }
-
-                    if (!depURI.equals("EMPTY_STRING")) {
-                        featureVector.addToValue("LEXICAL SIBLING FEATURE: HEAD_URI: " + headURI + " HEAD_TOKEN: " + headToken + " SEM-TYPE: " + dudeName + " CHILD_URI: " + depURI + " CHILD_TOKEN: " + depToken+ " SIBLING-SEM-TYPE: "+depDudeName, 1.0);
-                    }
-                }
+            if (dudeName.equals("Individual") || dudeName.equals("Class")) {
+                featureVector.addToValue("LEXICAL SIBLING FEATURE: HEAD_URI: " + headURI + " HEAD_TOKEN: " + headToken + " SEM-TYPE: " + dudeName, 1.0);
             }
         }
     }
-
 }

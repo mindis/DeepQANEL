@@ -1044,9 +1044,9 @@ public class DependencyParse {
         if(getParentNode(node1).equals(getParentNode(node2))){
             String s1 = getDependencyRelation(node1);
             String s2 = getDependencyRelation(node2);
-            String headToken = getToken(getParentNode(node1));
+            String headPOS = getPOSTag(getParentNode(node1));
             
-            return s1 + "-"+headToken+"-"+s2;
+            return s1 + "-"+headPOS+"-"+s2;
         }
         
         return "ThisNodeIsRoot";

@@ -14,12 +14,16 @@ import org.junit.Test;
  * @author sherzod
  */
 public class DBpediaEndPointTest {
-    
+
     @Test
-    public void test(){
+    public void test() {
         String range = DBpediaEndpoint.getRange("http://dbpedia.org/ontology/birthPlace");
-        
+        String domain = DBpediaEndpoint.getDomain("http://dbpedia.org/ontology/birthPlace");
+
+        System.out.println("Range: " + range);
+        System.out.println("Domain: " + domain);
         Assert.assertEquals(true, range.equals("http://dbpedia.org/ontology/Place"));
-        System.out.println("Range: "+ range);
+        Assert.assertEquals(true, domain.equals("http://dbpedia.org/ontology/Person"));
+
     }
 }
