@@ -22,6 +22,7 @@ import de.citec.sc.sampling.SlotExplorer;
 import de.citec.sc.sampling.StateInitializer;
 import de.citec.sc.template.NELEdgeTemplate;
 import de.citec.sc.template.NELLexicalTemplate;
+import de.citec.sc.template.NELNodeTemplate;
 import de.citec.sc.template.QAEdgeTemplate;
 import de.citec.sc.template.QATemplateFactory;
 import de.citec.sc.utils.Performance;
@@ -63,6 +64,9 @@ public class Pipeline {
     private static Map<Integer, String> specialSemanticTypes;
     private static Set<String> frequentWordsToExclude;
     private static Set<String> wordsWithSpecialSemanticTypes;
+    public static List<AbstractTemplate<AnnotatedDocument, State, ?>> nelTemplates;
+    public static List<AbstractTemplate<AnnotatedDocument, State, ?>> qaTemplates;
+    public static Scorer scorer;
 
     public static void initialize(Set<String> v, Map<Integer, String> s, Map<Integer, String> st, Set<String> f, Set<String> w) {
         validPOSTags = v;
@@ -77,7 +81,18 @@ public class Pipeline {
         BEAM_SIZE_QA_TRAINING = ProjectConfiguration.getQATrainingBeamSize();
         BEAM_SIZE_QA_TEST = ProjectConfiguration.getQATestBeamSize();
         BEAM_SIZE_NEL_TEST = ProjectConfiguration.getNELTestBeamSize();
-
+        
+        scorer = new DefaultScorer();
+        
+        nelTemplates = new ArrayList<>();
+        nelTemplates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        nelTemplates.add(new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        nelTemplates.add(new NELNodeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+        
+        qaTemplates = new ArrayList<>();
+        qaTemplates.add(new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes));
+        
+        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
     }
 
     public static List<Model<AnnotatedDocument, State>> train(List<AnnotatedDocument> trainingDocuments) {
@@ -124,10 +139,14 @@ public class Pipeline {
         System.out.println("QA Model: \n" + qaModel.toDetailedString());
 
         NELObjectiveFunction nelObjectiveFunction = new NELObjectiveFunction();
+        
+        long startTime = System.currentTimeMillis();
         List<SampledMultipleInstance<AnnotatedDocument, String, State>> nelInstances = testNEL(nelModel, testDocuments);
 
         List<SampledMultipleInstance<AnnotatedDocument, String, State>> qaInstances = testQA(qaModel, nelInstances);
-//        
+//      
+        long endTime = System.currentTimeMillis();
+        
         QAObjectiveFunction qaObjectiveFunction = new QAObjectiveFunction();
         qaObjectiveFunction.setUseQueryEvaluator(false);
 
@@ -138,6 +157,9 @@ public class Pipeline {
         //test results for qa task
         System.out.println("QA task : \n\n");
         Performance.logQATest(qaInstances, qaObjectiveFunction);
+        
+        long avgTime = (endTime - startTime)/testDocuments.size();
+        System.out.println(avgTime+" ms per test instance." );
 
     }
 
@@ -154,21 +176,22 @@ public class Pipeline {
          * Define templates that are responsible to generate factors/features to
          * score generated states.
          */
-        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
-//        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
-//        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
-        templates.add(new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+//        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
+////        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
+////        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
+//        templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+//        templates.add(new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+//        templates.add(new NELNodeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
 
         /*
          * Create the scorer object that computes a score from the factors'
          * features and the templates' weight vectors.
          */
-        Scorer scorer = new DefaultScorer();
+//        Scorer scorer = new DefaultScorer();
         /*
          * Define a model and provide it with the necessary templates.
          */
-        Model<AnnotatedDocument, State> model = new Model<>(scorer, templates);
+        Model<AnnotatedDocument, State> model = new Model<>(scorer, nelTemplates);
 
         /*
          * Create an Initializer that is responsible for providing an initial
@@ -282,21 +305,21 @@ public class Pipeline {
          * Define templates that are responsible to generate factors/features to
          * score generated states.
          */
-        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
-//        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
-//        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-//        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
-        templates.add(new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes));
+//        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
+////        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
+////        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
+////        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
+//        templates.add(new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes));
 
         /*
          * Create the scorer object that computes a score from the factors'
          * features and the templates' weight vectors.
          */
-        Scorer scorer = new DefaultScorer();
+//        Scorer scorer = new DefaultScorer();
         /*
          * Define a model and provide it with the necessary templates.
          */
-        Model<AnnotatedDocument, State> model = new Model<>(scorer, templates);
+        Model<AnnotatedDocument, State> model = new Model<>(scorer, qaTemplates);
 
 
         /*
@@ -416,16 +439,17 @@ public class Pipeline {
          * Define templates that are responsible to generate factors/features to
          * score generated states.
          */
-        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
-//        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
-//        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-        templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
-        templates.add(new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+//        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
+////        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
+////        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
+//        templates.add(new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+//        templates.add(new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
+//        templates.add(new NELNodeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
 
         /*
          * initialize QATemplateFactory
          */
-        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
+//        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
 
         /*
          * Create an Initializer that is responsible for providing an initial
@@ -516,16 +540,16 @@ public class Pipeline {
          * Define templates that are responsible to generate factors/features to
          * score generated states.
          */
-        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
-//        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
-//        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-//        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
-        templates.add(new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes));
+//        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
+////        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
+////        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
+////        templates.add(new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes));
+//        templates.add(new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes));
 
         /*
          * initialize QATemplateFactory
          */
-        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
+//        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
 
         /*
          * Define the explorers that will provide "neighboring" states given a
@@ -604,42 +628,4 @@ public class Pipeline {
 
         return testResults;
     }
-
-//    public static void test(String pathToModel, List<AnnotatedDocument> testDocuments) {
-//
-//        List<AbstractTemplate<AnnotatedDocument, State, ?>> templates = new ArrayList<>();
-////        templates.add(new ResourceTemplate(validPOSTags, semanticTypes));
-////        templates.add(new PropertyTemplate(validPOSTags, semanticTypes));
-//        templates.add(new LexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes));
-//
-//        /*
-//         * Create the scorer object that computes a score from the factors'
-//         * features and the templates' weight vectors.
-//         */
-//        Scorer scorer = new DefaultScorer();
-//        /*
-//         * Define a model and provide it with the necessary templates.
-//         */
-//        Model<AnnotatedDocument, State> model = new Model<>(scorer, templates);
-//
-//        /*
-//         * initialize QATemplateFactory
-//         */
-//        QATemplateFactory.initialize(validPOSTags, frequentWordsToExclude, semanticTypes);
-//
-//        QATemplateFactory f = new QATemplateFactory();
-//
-//        try {
-//            model.loadModelFromDir(pathToModel, f);
-//
-//            test(model, testDocuments);
-//
-//        } catch (ClassNotFoundException ex) {
-//            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (UnkownTemplateRequestedException ex) {
-//            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
-//        } catch (Exception ex) {
-//            java.util.logging.Logger.getLogger(Pipeline.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//    }
 }

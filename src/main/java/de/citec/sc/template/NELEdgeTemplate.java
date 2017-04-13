@@ -14,6 +14,7 @@ import factors.Factor;
 import factors.FactorScope;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,29 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
 
         Vector featureVector = factor.getFeatureVector();
 
+        Map<String, Double> depFeatures = getDependencyFeatures(state);
+        Map<String, Double> siblingFeatures = getSiblingFeatures(state);
+        
+        
+        
+
+        for (String k : depFeatures.keySet()) {
+            featureVector.addToValue(k, depFeatures.get(k));
+        }
+
+        for (String k : siblingFeatures.keySet()) {
+            featureVector.addToValue(k, siblingFeatures.get(k));
+        }
+
+
+    }
+
+    /**
+     * returns features that involve edge exploration.
+     */
+    private Map<String, Double> getDependencyFeatures(State state) {
+        Map<String, Double> features = new HashMap<>();
+
         //add dependency feature between tokens
         for (Integer tokenID : state.getDocument().getParse().getNodes().keySet()) {
             String headToken = state.getDocument().getParse().getToken(tokenID);
@@ -75,7 +99,6 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
             }
 
             List<Integer> dependentNodes = state.getDocument().getParse().getDependentEdges(tokenID, validPOSTags, frequentWordsToExclude);
-            List<Integer> siblings = state.getDocument().getParse().getSiblings(tokenID, validPOSTags, frequentWordsToExclude);
 
             if (!dependentNodes.isEmpty()) {
 
@@ -96,66 +119,64 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
 
                     Set<String> mergedIntervalPOSTAGs = state.getDocument().getParse().getIntervalPOSTagsMerged(tokenID, depNodeID);
 
-                    //handle specific case
-                    //mayor of Tel-Aviv, headquarters of MI6
-                    // NN(s) IN NNP
-                    for (String pattern : mergedIntervalPOSTAGs) {
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
-                    }
-                    
                     double depSimilarityScore = getSimilarityScore(depToken, depURI);
                     double depDBpediaScore = state.getHiddenVariables().get(depNodeID).getCandidate().getDbpediaScore();
-                    
+
                     double headSimilarityScore = getSimilarityScore(headToken, headURI);
                     double headMatollScore = state.getHiddenVariables().get(tokenID).getCandidate().getMatollScore();
-                    
-                    double score = (Math.max(depSimilarityScore, depDBpediaScore)) * 0.7 + 0.3 * (Math.max(headMatollScore, headSimilarityScore));
-                    
-                    
-                    
-                    if(headURI.contains("ontology")){
-//                        score += 0.1;
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
-                        
-                        
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
-                    }
-                    else{
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
-                        
-                        
-                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
-                     }
-                    
-                    
-                    
-                    
-//                    if(depSimilarityScore >= 0.8 && headSimilarityScore >= 0.8){
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-sim >= 0.8", 1.0);
-//                    }
-//                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.3){
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.3", 1.0);
-//                    }
-//                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.5){
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.5", 1.0);
-//                    }
-//                    if(depSimilarityScore >= 0.8 && headMatollScore >= 0.8){
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim >= 0.8 && head-matoll >= 0.8", 1.0);
-//                    }
-//                    if(headURI.endsWith("er")){
-//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head ends with -er", 1.0);
-//                    }
-//                    
-                    
 
+                    double score = (Math.max(depSimilarityScore, depDBpediaScore)) * 0.7 + 0.3 * (Math.max(headMatollScore, headSimilarityScore));
+
+                    if (depDudeName.equals("Individual")) {
+                        double individualScore = depDBpediaScore * 0.3 + depSimilarityScore * 0.7;
+
+//                        featureVector.addToValue("NEL EDGE - DEP FEATURE: Individual" + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", individualScore);
+                    }
+
+                    if (headURI.contains("ontology")) {
+
+                        features.put("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+
+                        //mayor of Tel-Aviv, headquarters of MI6
+                        // NN(s) IN NNP
+                        for (String pattern : mergedIntervalPOSTAGs) {
+                            features.put("NEL EDGE - DEP FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " Pattern = " + pattern, 1.0);
+                        }
+                    } else {
+
+                        features.put("NEL EDGE - DEP FEATURE: RDF Namespace" + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+
+                        for (String pattern : mergedIntervalPOSTAGs) {
+                            features.put("NEL EDGE - DEP FEATURE: RDF Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " Pattern = " + pattern, 1.0);
+                        }
+                    }
                 }
             }
+        }
+
+        return features;
+    }
+
+    private Map<String, Double> getSiblingFeatures(State state) {
+        Map<String, Double> features = new HashMap<>();
+
+        //add dependency feature between tokens
+        for (Integer tokenID : state.getDocument().getParse().getNodes().keySet()) {
+            String headToken = state.getDocument().getParse().getToken(tokenID);
+            String headPOS = state.getDocument().getParse().getPOSTag(tokenID);
+            String headURI = state.getHiddenVariables().get(tokenID).getCandidate().getUri();
+            Integer dudeID = state.getHiddenVariables().get(tokenID).getDudeId();
+            String dudeName = "EMPTY";
+            if (dudeID != -1) {
+                dudeName = semanticTypes.get(dudeID);
+            }
+
+            if (headURI.equals("EMPTY_STRING")) {
+                continue;
+            }
+
+            List<Integer> siblings = state.getDocument().getParse().getSiblings(tokenID, validPOSTags, frequentWordsToExclude);
+
             if (!siblings.isEmpty()) {
                 for (Integer depNodeID : siblings) {
                     String depToken = state.getDocument().getParse().getToken(depNodeID);
@@ -163,7 +184,7 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
                     String depPOS = state.getDocument().getParse().getPOSTag(depNodeID);
                     Integer depDudeID = state.getHiddenVariables().get(depNodeID).getDudeId();
                     String depRelation = state.getDocument().getParse().getSiblingDependencyRelation(depNodeID, tokenID);
-                    
+
                     String depDudeName = "EMPTY";
                     if (depDudeID != -1) {
                         depDudeName = semanticTypes.get(depDudeID);
@@ -175,46 +196,50 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
 
                     Set<String> mergedIntervalPOSTAGs = state.getDocument().getParse().getIntervalPOSTagsMerged(tokenID, depNodeID);
 
-                    //handle specific case
-                    //mayor of Tel-Aviv, headquarters of MI6
-                    // NN(s) IN NNP
-                    for (String pattern : mergedIntervalPOSTAGs) {
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + pattern + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " ", 1.0);
-                    }
-
-                    
-                    
-                    
                     double depSimilarityScore = getSimilarityScore(depToken, depURI);
                     double depDBpediaScore = state.getHiddenVariables().get(depNodeID).getCandidate().getDbpediaScore();
+                    double depMatollScore = state.getHiddenVariables().get(depNodeID).getCandidate().getMatollScore();
+
                     double headSimilarityScore = getSimilarityScore(headToken, headURI);
                     double headMatollScore = state.getHiddenVariables().get(tokenID).getCandidate().getMatollScore();
-                    
-                    
-                    double score = (Math.max(depSimilarityScore, depDBpediaScore)) * 0.7 + 0.3 * (Math.max(headMatollScore, headSimilarityScore));
-                    
-                    if(headURI.contains("ontology")){
-//                        score += 0.1;
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
-                        
-                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+                    double headDBpediaScore = state.getHiddenVariables().get(tokenID).getCandidate().getDbpediaScore();
+
+                    double score = (Math.max(depSimilarityScore, Math.max(depMatollScore, depDBpediaScore))) * 0.7 + 0.3 * (Math.max(Math.max(headDBpediaScore, headMatollScore), headSimilarityScore));
+
+                    if (depDudeName.equals("Individual")) {
+                        double individualScore = depDBpediaScore * 0.3 + depSimilarityScore * 0.7;
+
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: Individual" + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: to sibling node: " + depRelation + " score = ", individualScore);
                     }
-                    else{
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-sim-score = ", depSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " dep-dbpedia-score = ", depDBpediaScore);
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-sim-score = ", headSimilarityScore);
-//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " head-matoll-score = ", headMatollScore);
-                        
-                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
-                     }
+
+                    if (dudeName.equals("Individual")) {
+                        double individualScore = headDBpediaScore * 0.3 + headSimilarityScore * 0.7;
+
+//                        featureVector.addToValue("NEL EDGE - SIBLING FEATURE: Individual" + "   sibling: " + dudeName + ":" + headPOS + " dep-relation: to dependent node: " + depRelation + " score = ", individualScore);
+                    }
+
+                    if (headURI.contains("ontology")) {
+
+                        features.put("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+
+                        for (String pattern : mergedIntervalPOSTAGs) {
+                            features.put("NEL EDGE - SIBLING FEATURE: ONTOLOGY Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " Pattern = " + pattern, 1.0);
+                        }
+                    } else {
+
+                        features.put("NEL EDGE - SIBLING FEATURE: " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " score = ", score);
+
+                        for (String pattern : mergedIntervalPOSTAGs) {
+                            features.put("NEL EDGE - SIBLING FEATURE: RDF Namespace " + " head: " + dudeName + ":" + headPOS + "   dep: " + depDudeName + ":" + depPOS + " dep-relation: " + depRelation + " Pattern = " + pattern, 1.0);
+                        }
+                    }
                 }
             }
         }
+
+        return features;
     }
-    
+
     /**
      * levenstein sim
      */
@@ -240,6 +265,7 @@ public class NELEdgeTemplate extends AbstractTemplate<AnnotatedDocument, State, 
             temp += c;
         }
 
+        temp = temp.replaceAll("\\s+", " ");
         uri = temp.trim().toLowerCase();
 
         //compute levenstein edit distance similarity and normalize

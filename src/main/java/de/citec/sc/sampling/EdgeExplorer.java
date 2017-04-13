@@ -319,7 +319,7 @@ public class EdgeExplorer implements Explorer<State> {
                 }
                 break;
             case "UnderSpecifiedClass":
-                topK = 10;
+                topK = 5;
                 useLemmatizer = false;
                 mergePartialMatches = false;
                 useWordNet = false;

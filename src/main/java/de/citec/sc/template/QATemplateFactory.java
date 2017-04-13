@@ -36,16 +36,14 @@ public class QATemplateFactory implements TemplateFactory<AnnotatedDocument, Sta
     public AbstractTemplate<AnnotatedDocument, State, ?> newInstance(String templateName) throws UnkownTemplateRequestedException, Exception {
 
         switch (templateName) {
-            case "NodeSimilarityTemplate":
-                return new NodeSimilarityTemplate();
-            case "LexicalTemplate":
+            case "NELLexicalTemplate":
                 return new NELLexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes);
-            case "ResourceTemplate":
-                return new ResourceTemplate(validPOSTags, semanticTypes);
-            case "PropertyTemplate":
-                return new PropertyTemplate(validPOSTags, semanticTypes);//new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes
-            case "QALexicalTemplate":
-                return new QALexicalTemplate(validPOSTags, frequentWordsToExclude, semanticTypes, specialSemanticTypes);
+            case "NELEdgeTemplate":
+                return new NELEdgeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes);
+            case "NELNodeTemplate":
+                return new NELNodeTemplate(validPOSTags, frequentWordsToExclude, semanticTypes);
+            case "QAEdgeTemplate":
+                return new QAEdgeTemplate(validPOSTags, frequentWordsToExclude, specialSemanticTypes);
 
         }
 

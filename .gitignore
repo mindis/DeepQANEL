@@ -18,3 +18,7 @@ trainResult
 testResult
 models
 copy.sh
+
+
+ngrok
+ngrok.sh

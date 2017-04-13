@@ -5,6 +5,8 @@ import de.citec.sc.corpus.QALDCorpus;
 import de.citec.sc.dudes.rdf.ExpressionFactory;
 import de.citec.sc.dudes.rdf.RDFDUDES;
 import de.citec.sc.learning.QueryConstructor;
+import static de.citec.sc.main.Pipeline.nelTemplates;
+import static de.citec.sc.main.Pipeline.scorer;
 import de.citec.sc.qald.QALDCorpusLoader;
 import de.citec.sc.query.CandidateRetriever;
 import de.citec.sc.query.CandidateRetrieverOnLucene;
@@ -70,7 +72,7 @@ public class Main {
         }
 
         ProjectConfiguration.loadConfigurations(args);
-        
+
         log.info(ProjectConfiguration.getAllParameters());
 
         //load index, initialize postag lists etc.        
@@ -79,39 +81,64 @@ public class Main {
         //load training and testing corpus
         List<AnnotatedDocument> trainDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTrainingDatasetName()), ProjectConfiguration.getTrainMaxWordCount());
         List<AnnotatedDocument> testDocuments = getDocuments(QALDCorpusLoader.Dataset.valueOf(ProjectConfiguration.getTestDatasetName()), ProjectConfiguration.getTestMaxWordCount());
-        
-        System.out.println("Training on "+ProjectConfiguration.getTrainingDatasetName()+" with "+trainDocuments.size());
-        System.out.println("Testing on "+ProjectConfiguration.getTestDatasetName()+" with "+testDocuments.size());
 
-        //train and test model
-        try {
-            List<Model<AnnotatedDocument, State>> trainedModels = Pipeline.train(trainDocuments);
+        System.out.println("Training on " + ProjectConfiguration.getTrainingDatasetName() + " with " + trainDocuments.size());
+        System.out.println("Testing on " + ProjectConfiguration.getTestDatasetName() + " with " + testDocuments.size());
 
-            for (Model<AnnotatedDocument, State> m1 : trainedModels) {
-                m1.saveModelToFile("models", "model_" + ProjectConfiguration.getTrainMaxWordCount());
+        boolean trainOnly = true;
+        if (trainOnly) {
+            //train and test model
+            try {
+                List<Model<AnnotatedDocument, State>> trainedModels = Pipeline.train(trainDocuments);
+
+                for (Model<AnnotatedDocument, State> m1 : trainedModels) {
+                    if (trainedModels.indexOf(m1) == 0) {
+                        m1.saveModelToFile("models", "model_nel_" + ProjectConfiguration.getTrainMaxWordCount() + "_" + ProjectConfiguration.getNumberOfEpochs());
+                    }
+                    if (trainedModels.indexOf(m1) == 1) {
+                        m1.saveModelToFile("models", "model_qa_" + ProjectConfiguration.getTrainMaxWordCount() + "_" + ProjectConfiguration.getNumberOfEpochs());
+                    }
+                }
+
+                Pipeline.test(trainedModels, testDocuments);
+            } catch (Exception ex) {
+                java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
             }
+        } else {
+            //train and test model
+            try {
+                List<Model<AnnotatedDocument, State>> trainedModels = new ArrayList<>();
 
-            Pipeline.test(trainedModels, testDocuments);
-//            Pipeline.test("models/model", trainDocuments);
-        } catch (Exception ex) {
-            java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                QATemplateFactory factory = new QATemplateFactory();
+
+                Model<AnnotatedDocument, State> modelNEL = new Model<>(Pipeline.scorer, Pipeline.nelTemplates);
+                Model<AnnotatedDocument, State> modelQA = new Model<>(Pipeline.scorer, Pipeline.qaTemplates);
+
+                modelNEL.loadModelFromDir("models/model_nel_" + ProjectConfiguration.getTrainMaxWordCount() + "_" + ProjectConfiguration.getNumberOfEpochs(), factory);
+                modelQA.loadModelFromDir("models/model_qa_" + ProjectConfiguration.getTrainMaxWordCount() + "_" + ProjectConfiguration.getNumberOfEpochs(), factory);
+
+                trainedModels.add(modelNEL);
+                trainedModels.add(modelQA);
+
+                Pipeline.test(trainedModels, testDocuments);
+            } catch (Exception ex) {
+                java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
     }
 
     private static void initialize() {
-        
+
         System.out.println("Initialization process has started ....");
 
         CandidateRetriever retriever = null;
-        
-        if(ProjectConfiguration.getIndex().equals("lucene")){
+
+        if (ProjectConfiguration.getIndex().equals("lucene")) {
             retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
-        }
-        else{
+        } else {
             retriever = new CandidateRetrieverOnMemory("rawIndexFiles/resourceFiles", "rawIndexFiles/classFiles", "rawIndexFiles/predicateFiles", "rawIndexFiles/matollFiles", "rawIndexFiles/matollAdjectiveFiles");
         }
-        
 
         WordNetAnalyzer wordNet = new WordNetAnalyzer("src/main/resources/WordNet-3.0/dict");
 
@@ -177,7 +204,7 @@ public class Main {
         Pipeline.initialize(validPOSTags, semanticTypes, specialSemanticTypes, frequentWordsToExclude, wordsWithSpecialSemanticTypes);
 
         QueryConstructor.initialize(specialSemanticTypes, semanticTypes, validPOSTags, frequentWordsToExclude, wordsWithSpecialSemanticTypes);
-        
+
         System.out.println("Initialization process has ended ....");
     }
 

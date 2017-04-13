@@ -1,5 +1,6 @@
 package de.citec.sc.sampling;
 
+import de.citec.sc.learning.QueryConstructor;
 import de.citec.sc.utils.DBpediaEndpoint;
 import de.citec.sc.variable.State;
 import java.util.ArrayList;
@@ -27,24 +28,38 @@ public class SamplingStrategies {
 						getScore.apply(s2.getCandidateState())));
                                 
                                 List<StatePair<StateT>> validPairs = new ArrayList<>();
-                                
                                 for(StatePair<StateT> pair : candidates){
+                                    State state = (State) pair.getCandidateState();
+                                    String query = QueryConstructor.getSPARQLQuery(state);
+                                    boolean isValidQuery = false;
+                                    
+                                    String questionString = state.getDocument().getQuestionString();
+                                    
+                                    if (questionString.startsWith("Did") || questionString.startsWith("Does") || questionString.startsWith("Do") || questionString.startsWith("Is") || questionString.startsWith("Were") || questionString.startsWith("Was") || questionString.startsWith("Are")) {
+                                        if(query.contains("ASK")){
+                                            isValidQuery = true;
+                                        }
+                                    }
+                                    else{
+                                        if(query.contains("SELECT")){
+                                            isValidQuery = true;
+                                        }    
+                                    }
+                                    
+                                    if(isValidQuery){
+                                        boolean returnsAnswer = DBpediaEndpoint.isValidQuery(query, true);
+                                        
+                                        if(returnsAnswer){
+                                            validPairs.add(pair);
+                                        }
+                                    }
                                     
                                     if(validPairs.size() == k){
                                         break;
                                     }
-                                    
-                                    if(pair.getCandidateState() instanceof State){
-                                        State state = (State) pair.getCandidateState();
-                                        
-                                        //if the state returns a valid SPARQL query (query returns some answer)    
-                                        if(DBpediaEndpoint.isValidState(state)){
-                                            validPairs.add(pair);
-                                        }
-                                    }
                                 }
 
-				return candidates.subList(0, Math.min(k, candidates.size()));
+				return validPairs;
 			}
 
 			@Override
@@ -67,7 +82,7 @@ public class SamplingStrategies {
 			public List<BeamSearchSamplingStrategy.StatePair<StateT>> sampleCandidate(List<BeamSearchSamplingStrategy.StatePair<StateT>> candidates) {
 				candidates.sort((s1, s2) -> -Double.compare(getScore.apply(s1.getCandidateState()),
 						getScore.apply(s2.getCandidateState())));
-
+                                
 				return candidates.subList(0, Math.min(k, candidates.size()));
 			}
 

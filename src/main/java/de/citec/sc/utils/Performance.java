@@ -256,7 +256,9 @@ public class Performance {
         System.out.println("Test results with Top-k: " + ProjectConfiguration.getQATestBeamSize() + "\n\n");
         System.out.println("MACRO F1: " + MACROF1 + "\n\n");
 
-        for (int i = 1; i <= 10; i++) {
+        int topKStateNumber = ProjectConfiguration.getQATestBeamSize();
+        
+        for (int i = 1; i <= topKStateNumber; i++) {
             int z = getCorrectInstanceNumber(testResults, function, i);
 
             double correct = z / (double) testResults.size();
