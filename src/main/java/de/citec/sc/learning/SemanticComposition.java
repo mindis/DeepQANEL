@@ -107,6 +107,10 @@ public class SemanticComposition {
                 dependent = mergeChildNodes(state, depNodeIndex);
 
                 String argument = state.getSlot(depNodeIndex, headNode);
+                
+                if(argument.equals("")){
+                    argument = "1";
+                }
 
                 head = merge(head, dependent, argument);
 

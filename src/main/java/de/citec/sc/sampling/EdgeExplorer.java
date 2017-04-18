@@ -99,11 +99,10 @@ public class EdgeExplorer implements Explorer<State> {
                         for (Candidate headNodeCandidate : headNodeCandidates) {
                             for (Candidate depNodeCandidate : depNodeCandidates) {
 
-                                
                                 boolean isSubject = DBpediaEndpoint.isSubjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
                                 boolean isObject = DBpediaEndpoint.isObjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
-                                
-                                if (headNodeCandidate.getUri().equals("http://dbpedia.org/ontology/foundedBy") && depNodeCandidate.getUri().equals("http://dbpedia.org/resource/Intel")) {
+
+                                if (headNodeCandidate.getUri().equals("http://dbpedia.org/ontology/creator") && depNodeCandidate.getUri().equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#type###http://dbpedia.org/ontology/TelevisionShow")) {
                                     int z = 1;
                                 }
 
@@ -165,71 +164,70 @@ public class EdgeExplorer implements Explorer<State> {
                 }
 
                 //if the dependent nodes have been explored, then no need to explore the siblings
-                if (hasValidDepNode) {
-                    continue;
-                }
+                if (!hasValidDepNode) {
 
-                for (Integer depNodeIndex : siblings) {
+                    for (Integer depNodeIndex : siblings) {
 
-                    //greedy exploring, skip nodes with assigned URI
-                    if (!currentState.getHiddenVariables().get(depNodeIndex).getCandidate().getUri().equals("EMPTY_STRING")) {
-                        continue;
-                    }
-
-                    String depNode = currentState.getDocument().getParse().getNodes().get(depNodeIndex);
-
-                    for (Integer indexOfDepDude : semanticTypes.keySet()) {
-
-                        String depDudeName = semanticTypes.get(indexOfDepDude);
-
-                        Set<Candidate> depNodeCandidates = getDBpediaMatches(depDudeName, depNode);
-
-                        if (depNodeCandidates.isEmpty()) {
+                        //greedy exploring, skip nodes with assigned URI
+                        if (!currentState.getHiddenVariables().get(depNodeIndex).getCandidate().getUri().equals("EMPTY_STRING")) {
                             continue;
                         }
 
-                        for (Candidate headNodeCandidate : headNodeCandidates) {
-                            for (Candidate depNodeCandidate : depNodeCandidates) {
+                        String depNode = currentState.getDocument().getParse().getNodes().get(depNodeIndex);
 
-                                if (headNodeCandidate.getUri().equals("http://dbpedia.org/ontology/field###http://dbpedia.org/resource/Oceanography") && depNodeCandidate.getUri().equals("http://dbpedia.org/ontology/birthPlace###http://dbpedia.org/resource/Sweden")) {
-                                    int z = 1;
-                                }
-                                boolean isSubject = DBpediaEndpoint.isSubjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
-                                boolean isObject = DBpediaEndpoint.isObjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
+                        for (Integer indexOfDepDude : semanticTypes.keySet()) {
 
-                                if (isSubject) {
-                                    State s = new State(currentState);
+                            String depDudeName = semanticTypes.get(indexOfDepDude);
 
-                                    s.addHiddenVariable(indexOfNode, indexOfDude, headNodeCandidate);
-                                    s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
+                            Set<Candidate> depNodeCandidates = getDBpediaMatches(depDudeName, depNode);
 
-                                    //Argument is 1 => subj
-                                    if (depDudeName.equals("RestrictionClass") || depDudeName.equals("Property") || dudeName.equals("Property") || dudeName.equals("RestrictionClass")) {
-                                        s.addSlotVariable(depNodeIndex, indexOfNode, 1);
+                            if (depNodeCandidates.isEmpty()) {
+                                continue;
+                            }
+
+                            for (Candidate headNodeCandidate : headNodeCandidates) {
+                                for (Candidate depNodeCandidate : depNodeCandidates) {
+
+                                    if (headNodeCandidate.getUri().equals("http://dbpedia.org/ontology/field###http://dbpedia.org/resource/Oceanography") && depNodeCandidate.getUri().equals("http://dbpedia.org/ontology/birthPlace###http://dbpedia.org/resource/Sweden")) {
+                                        int z = 1;
                                     }
+                                    boolean isSubject = DBpediaEndpoint.isSubjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
+                                    boolean isObject = DBpediaEndpoint.isObjectTriple(headNodeCandidate.getUri(), depNodeCandidate.getUri());
 
-                                    if (!s.equals(currentState) && !newStates.contains(s)) {
-                                        newStates.add(s);
+                                    if (isSubject) {
+                                        State s = new State(currentState);
+
+                                        s.addHiddenVariable(indexOfNode, indexOfDude, headNodeCandidate);
+                                        s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
+
+                                        //Argument is 1 => subj
+                                        if (depDudeName.equals("RestrictionClass") || depDudeName.equals("Property") || dudeName.equals("Property") || dudeName.equals("RestrictionClass")) {
+                                            s.addSlotVariable(depNodeIndex, indexOfNode, 1);
+                                        }
+
+                                        if (!s.equals(currentState) && !newStates.contains(s)) {
+                                            newStates.add(s);
+                                        }
+
+                                        hasValidDepNode = true;
                                     }
+                                    if (isObject) {
+                                        State s = new State(currentState);
 
-                                    hasValidDepNode = true;
-                                }
-                                if (isObject) {
-                                    State s = new State(currentState);
+                                        s.addHiddenVariable(indexOfNode, indexOfDude, headNodeCandidate);
+                                        s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
 
-                                    s.addHiddenVariable(indexOfNode, indexOfDude, headNodeCandidate);
-                                    s.addHiddenVariable(depNodeIndex, indexOfDepDude, depNodeCandidate);
+                                        //Argument number is 2 => obj
+                                        if (depDudeName.equals("Property") || dudeName.equals("Property")) {
+                                            s.addSlotVariable(depNodeIndex, indexOfNode, 2);
+                                        }
 
-                                    //Argument number is 2 => obj
-                                    if (depDudeName.equals("Property") || dudeName.equals("Property")) {
-                                        s.addSlotVariable(depNodeIndex, indexOfNode, 2);
+                                        if (!s.equals(currentState) && !newStates.contains(s)) {
+                                            newStates.add(s);
+                                        }
+
+                                        hasValidDepNode = true;
                                     }
-
-                                    if (!s.equals(currentState) && !newStates.contains(s)) {
-                                        newStates.add(s);
-                                    }
-
-                                    hasValidDepNode = true;
                                 }
                             }
                         }

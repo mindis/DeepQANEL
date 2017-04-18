@@ -52,13 +52,13 @@ public class Main {
             args[6] = "-m2";//matoll
             args[7] = "true";//true, false
             args[8] = "-e";//epochs
-            args[9] = "" + 4;
+            args[9] = "" + 10;
             args[10] = "-s";//sampling steps
             args[11] = "" + 15;
             args[12] = "-k1";//top k samples to select from during training NEL
-            args[13] = "" + 1;
+            args[13] = "" + 4;
             args[14] = "-k2";//top k samples to select from during training for QA
-            args[15] = "" + 1;
+            args[15] = "" + 4;
             args[16] = "-l1";//top k samples to select from during testing for NEL
             args[17] = "" + 10;
             args[18] = "-l2";//top k samples to select from during testing for QA
@@ -74,6 +74,8 @@ public class Main {
         ProjectConfiguration.loadConfigurations(args);
 
         log.info(ProjectConfiguration.getAllParameters());
+        
+        System.out.println(ProjectConfiguration.getAllParameters());
 
         //load index, initialize postag lists etc.        
         initialize();

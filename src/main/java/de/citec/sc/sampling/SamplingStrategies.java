@@ -2,6 +2,7 @@ package de.citec.sc.sampling;
 
 import de.citec.sc.learning.QueryConstructor;
 import de.citec.sc.utils.DBpediaEndpoint;
+import de.citec.sc.utils.FileFactory;
 import de.citec.sc.variable.State;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +84,12 @@ public class SamplingStrategies {
 				candidates.sort((s1, s2) -> -Double.compare(getScore.apply(s1.getCandidateState()),
 						getScore.apply(s2.getCandidateState())));
                                 
+//                                String s = "";
+//                                for(StatePair<StateT> pair : candidates){
+//                                    s+= pair.getCandidateState()+"\n\n======================================================================\n";
+//                                }
+//                                
+//                                FileFactory.writeListToFile("states.txt", s, false);
 				return candidates.subList(0, Math.min(k, candidates.size()));
 			}
 

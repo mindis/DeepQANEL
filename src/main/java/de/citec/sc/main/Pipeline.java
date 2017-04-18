@@ -254,7 +254,7 @@ public class Pipeline {
          */
         MyBeamSearchSampler<AnnotatedDocument, State, String> nelSampler = new MyBeamSearchSampler<>(model, objective, explorers,
                 scoreStoppingCriterion);
-        nelSampler.setTrainSamplingStrategy(BeamSearchSamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_NEL_TRAINING, s -> s.getObjectiveScore()));
+        nelSampler.setTrainSamplingStrategy(SamplingStrategies.greedyBeamSearchSamplingStrategyByObjective(BEAM_SIZE_NEL_TRAINING, s -> s.getObjectiveScore()));
         nelSampler.setTrainAcceptStrategy(AcceptStrategies.strictObjectiveAccept());
 
 //        MySampler<AnnotatedDocument, State, String> sampler = new MySampler<>(model, objective, explorers,
