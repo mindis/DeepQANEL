@@ -53,6 +53,11 @@ public class SemanticComposition {
     }
 
     private static void mergeSlots(State state) {
+        //give priority to type of inferred nodes.
+        //if the inferred is sibling then postpone that merge
+        //if the inferred is dependent then merge that first
+        
+        
         //loop over all slot arguments and join them
         for (Integer depNode : state.getSlotVariables().keySet()) {
             

@@ -253,7 +253,7 @@ public class QueryConstructorTest {
     @Test
     public void test3() {
         
-        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndex");
 
         WordNetAnalyzer wordNet = new WordNetAnalyzer("src/main/resources/WordNet-3.0/dict");
 

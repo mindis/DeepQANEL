@@ -28,7 +28,7 @@ public class AnalyseTrainingDocuments {
     }
 
     private static void analysePOSTAGs() {
-        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndex");
 
         WordNetAnalyzer wordNet = new WordNetAnalyzer("src/main/resources/WordNet-3.0/dict");
 
@@ -124,7 +124,7 @@ public class AnalyseTrainingDocuments {
     }
 
     private static void analyseDependency() {
-        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+        CandidateRetriever retriever = new CandidateRetrieverOnLucene(true, "luceneIndex");
 
         WordNetAnalyzer wordNet = new WordNetAnalyzer("src/main/resources/WordNet-3.0/dict");
 

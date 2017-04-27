@@ -28,20 +28,34 @@
         <dependency>
             <groupId>edu.stanford.nlp</groupId>
             <artifactId>stanford-corenlp</artifactId>
-            <version>3.5.2</version>
+            <version>3.7.0</version>
         </dependency>
 
         <dependency>
             <groupId>edu.stanford.nlp</groupId>
             <artifactId>stanford-corenlp</artifactId>
-            <version>3.5.2</version>
-            <classifier>models</classifier>
+            <version>3.7.0</version>
+            <classifier>models-english</classifier>
+        </dependency>
+        
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>3.7.0</version>
+            <classifier>models-german</classifier>
+        </dependency>
+        
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>3.7.0</version>
+            <classifier>models-spanish</classifier>
         </dependency>
 
         <dependency>
             <groupId>edu.stanford.nlp</groupId>
             <artifactId>stanford-parser</artifactId>
-            <version>3.5.2</version>
+            <version>3.7.0</version>
             <classifier>models</classifier>
         </dependency>
         

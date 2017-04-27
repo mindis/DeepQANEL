@@ -24,6 +24,7 @@ import edu.stanford.nlp.process.TokenizerFactory;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.trees.GrammaticalStructure;
 import edu.stanford.nlp.trees.GrammaticalStructureFactory;
@@ -33,6 +34,8 @@ import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.trees.TreebankLanguagePack;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.PropertiesUtils;
+import edu.stanford.nlp.util.StringUtils;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.LinkedHashMap;
@@ -50,22 +53,41 @@ import java.util.Set;
 public class StanfordParser {
 
     private static LexicalizedParser lp;
-    private static StanfordCoreNLP pipeline;
+    private static StanfordCoreNLP enPipeline;
+    private static StanfordCoreNLP dePipeline;
+    private static StanfordCoreNLP esPipeline;
 
+    public enum Language{EN, DE, ES};
+    
     private static void loadModels() {
+            System.out.println("Loading Stanford models for EN");
+            
+            Properties enProps = StringUtils.argsToProperties(
+                new String[]{"-props", "src/main/resources/dep-parse-properties/english.props"});
 
-        System.out.println("Loading Stanford models");
-        Properties props = new Properties();
-        props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
-        pipeline = new StanfordCoreNLP(props);
+            enPipeline = new StanfordCoreNLP(enProps);
 
+            System.out.println("Loading Stanford models for DE");
+            
+            Properties deProps = StringUtils.argsToProperties(
+                new String[]{"-props", "src/main/resources/dep-parse-properties/german.props"});
+            dePipeline = new StanfordCoreNLP(deProps);
+            
+            
+            System.out.println("Loading Stanford models for ES");
+            
+            Properties esProps = StringUtils.argsToProperties(
+                new String[]{"-props", "src/main/resources/dep-parse-properties/spanish.props"});
+            esPipeline = new StanfordCoreNLP(esProps);
+        
+        
 //        String parserModel = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
 //        lp = LexicalizedParser.loadModel(parserModel);
     }
 
-    private static List<TypedDependency> getDependencies(String sentence) {
+    private static List<TypedDependency> getDependencies(String sentence, Language lang) {
 
-        if (pipeline == null) {
+        if (enPipeline == null) {
             loadModels();
         }
 
@@ -85,23 +107,33 @@ public class StanfordParser {
         return tdl;
     }
 
-    public static DependencyParse parse(String text) {
+    public static DependencyParse parse(String text, Language lang) {
 
-        if (pipeline == null) {
+        if (enPipeline == null) {
             loadModels();
         }
 
         DependencyParse parse = new DependencyParse();
 
         Annotation document = new Annotation(text);
+        
+        if(lang.equals(Language.EN)){
+            enPipeline.annotate(document);
+        }
+        else if(lang.equals(Language.DE)){
+            dePipeline.annotate(document);
+        }
+        else if(lang.equals(Language.ES)){
+            esPipeline.annotate(document);
+        }
 
-        pipeline.annotate(document);
+        
 
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
 
         for (CoreMap sentence : sentences) {
 
-            SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+            SemanticGraph dependencies = sentence.get(EnhancedDependenciesAnnotation.class);
 
             IndexedWord root = dependencies.getFirstRoot();
 
@@ -135,9 +167,9 @@ public class StanfordParser {
         return parse;
     }
 
-    public static List<String> lemmatizeDocument(String documentText) {
+    public static List<String> lemmatizeDocument(String documentText, Language lang) {
 
-        if (pipeline == null) {
+        if (enPipeline == null) {
             loadModels();
         }
 
@@ -147,7 +179,15 @@ public class StanfordParser {
         Annotation document = new Annotation(documentText);
 
         // run all Annotators on this text
-        pipeline.annotate(document);
+        if(lang.equals(Language.EN)){
+            enPipeline.annotate(document);
+        }
+        if(lang.equals(Language.DE)){
+            dePipeline.annotate(document);
+        }
+        if(lang.equals(Language.ES)){
+            esPipeline.annotate(document);
+        }
 
         // Iterate over all of the sentences found
         List<CoreMap> sentences = document.get(SentencesAnnotation.class);
@@ -168,9 +208,9 @@ public class StanfordParser {
      * @param t
      * @return
      */
-    public static String lemmatize(String t) {
+    public static String lemmatize(String t, Language lang) {
 
-        if (pipeline == null) {
+        if (enPipeline == null) {
             loadModels();
         }
 
@@ -181,7 +221,15 @@ public class StanfordParser {
             Annotation document = new Annotation(t);
 
             // run all Annotators on this text
-            pipeline.annotate(document);
+            if(lang.equals(Language.EN)){
+            enPipeline.annotate(document);
+            }
+            if(lang.equals(Language.DE)){
+                dePipeline.annotate(document);
+            }
+            if(lang.equals(Language.ES)){
+                esPipeline.annotate(document);
+            }
 
             // Iterate over all of the sentences found
             List<CoreMap> sentences = document.get(SentencesAnnotation.class);
@@ -199,47 +247,6 @@ public class StanfordParser {
         }
 
         return lemma.trim();
-    }
-
-    private DependencyParse parse2(String sentence) {
-        DependencyParse parse = new DependencyParse();
-
-        List<TypedDependency> tdl = getDependencies(sentence);
-        //System.out.println(tdl);
-
-        for (TypedDependency t : tdl) {
-
-            if (!t.reln().getShortName().equals("root")) {
-
-                String dep = t.dep().originalText();
-                int depIndex = t.dep().index() - 1;
-                String depPOS = t.dep().tag();
-                int depStart = t.dep().beginPosition();
-                int depEnd = t.dep().endPosition();
-
-                String gov = t.gov().originalText();
-                int govIndex = t.gov().index() - 1;
-                String govPOS = t.gov().tag();
-                int govStart = t.gov().beginPosition();
-                int govEnd = t.gov().endPosition();
-
-//                if (t.reln().getShortName().equals("amod") || t.reln().getShortName().equals("nn")) {
-//
-//                    parse.addNode(govIndex, dep + " " + gov, govPOS, depStart, govEnd);
-//                    parse.addEdge(depIndex, govIndex, t.reln().getShortName());
-//
-//                } else {
-                parse.addNode(govIndex, gov, govPOS, govStart, govEnd);
-                parse.addNode(depIndex, dep, depPOS, depStart, depEnd);
-
-                parse.addEdge(depIndex, govIndex, t.reln().getShortName());
-                //}
-
-            } else {
-                parse.setHeadNode(t.dep().index() - 1);
-            }
-        }
-        return parse;
     }
 
     private void test() throws IOException, ClassCastException, ClassNotFoundException {

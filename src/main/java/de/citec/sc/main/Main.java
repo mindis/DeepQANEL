@@ -102,7 +102,7 @@ public class Main {
                     }
                 }
 
-                Pipeline.test(trainedModels, testDocuments);
+//                Pipeline.test(trainedModels, testDocuments);
             } catch (Exception ex) {
                 java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -137,9 +137,9 @@ public class Main {
         CandidateRetriever retriever = null;
 
         if (ProjectConfiguration.getIndex().equals("lucene")) {
-            retriever = new CandidateRetrieverOnLucene(true, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+            retriever = new CandidateRetrieverOnLucene(true, "luceneIndex");
         } else {
-            retriever = new CandidateRetrieverOnMemory("rawIndexFiles/resourceFiles", "rawIndexFiles/classFiles", "rawIndexFiles/predicateFiles", "rawIndexFiles/matollFiles", "rawIndexFiles/matollAdjectiveFiles");
+            retriever = new CandidateRetrieverOnMemory("rawIndexFiles");
         }
 
         WordNetAnalyzer wordNet = new WordNetAnalyzer("src/main/resources/WordNet-3.0/dict");

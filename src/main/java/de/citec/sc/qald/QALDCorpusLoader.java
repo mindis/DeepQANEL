@@ -100,7 +100,7 @@ public class QALDCorpusLoader {
         List<AnnotatedDocument> documents = new ArrayList<>();
 
         for (Question q : questions) {
-            DependencyParse parse = StanfordParser.parse(q.getQuestionText());
+            DependencyParse parse = StanfordParser.parse(q.getQuestionText(), StanfordParser.Language.EN);
 
             parse.removeLoops();
 

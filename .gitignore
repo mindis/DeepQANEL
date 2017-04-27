@@ -11,6 +11,7 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 luceneIndexes/
+luceneIndex
 nbactions.xml
 target/
 all.log
@@ -18,7 +19,7 @@ trainResult
 testResult
 models
 copy.sh
-
+freebase_links_en.ttl.bz2
 
 ngrok
 ngrok.sh

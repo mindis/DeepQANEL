@@ -1,6 +1,7 @@
 package de.citec.sc.sampling;
 
 import de.citec.sc.utils.Performance;
+import de.citec.sc.variable.HiddenVariable;
 import de.citec.sc.variable.State;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -159,7 +160,12 @@ public class MyBeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
         if (s.getObjectiveScore() == 1.0) {
             Performance.addParsed(s.getDocument().getQuestionString(), s.getDocument().getGoldQueryString());
         } else {
-            String q = s.toString() + "\n\nScore: " + s.getObjectiveScore() + "\n"
+            String uris = "";
+            
+            for(Integer nodeID : s.getHiddenVariables().keySet()){
+                uris += "Node: "+s.getDocument().getParse().getToken(nodeID)+ "   URI : "+s.getHiddenVariables().get(nodeID).getCandidate().getUri()+"\n";
+            }
+            String q = s.toString() + "\n\nScore: " + s.getObjectiveScore() + "\n\nAssignments: " +uris+ "\n"
                     + "================================================================================================================\n";
 
             Performance.addUnParsed(s.getDocument().getQuestionString(), q);

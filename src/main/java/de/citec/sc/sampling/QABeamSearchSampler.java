@@ -1,5 +1,6 @@
 package de.citec.sc.sampling;
 
+import de.citec.sc.learning.QueryConstructor;
 import de.citec.sc.utils.Performance;
 import de.citec.sc.variable.State;
 import java.util.ArrayList;
@@ -159,7 +160,7 @@ public class QABeamSearchSampler<InstanceT, StateT extends AbstractState<Instanc
         if (s.getObjectiveScore() == 1.0) {
             Performance.addParsed(s.getDocument().getQuestionString(), s.getDocument().getGoldQueryString());
         } else {
-            String q = s.toString() + "\n\nScore: " + s.getObjectiveScore() + "\n"
+            String q = s.toString() + "\n\nScore: " + s.getObjectiveScore() + "\n\nQuery:" +QueryConstructor.getSPARQLQuery(s)+"\n"
                     + "================================================================================================================\n";
 
             Performance.addUnParsed(s.getDocument().getQuestionString(), q);

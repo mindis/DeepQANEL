@@ -95,7 +95,7 @@ public class Search {
 
     public static void load() {
         if (retriever == null) {
-            retriever = new CandidateRetrieverOnLucene(false, "luceneIndexes/resourceIndex", "luceneIndexes/classIndex", "luceneIndexes/predicateIndex", "luceneIndexes/matollIndex");
+            retriever = new CandidateRetrieverOnLucene(false, "luceneIndex");
         }
 
         if (wordNet == null) {
@@ -174,7 +174,7 @@ public class Search {
 
         for (String queryTerm : queryTerms) {
 
-            List<Instance> matches = retriever.getAllResources(queryTerm, topK);
+            List<Instance> matches = retriever.getAllResources(queryTerm, topK, CandidateRetriever.Language.EN);
 
             for (Instance i : matches) {
                 if (!result.contains(i)) {
@@ -213,7 +213,7 @@ public class Search {
         //get from dbpedia index
         for (String queryTerm : queryTerms) {
 
-            List<Instance> matches = retriever.getPredicatesInDBpedia(queryTerm, topK, partialMatch);
+            List<Instance> matches = retriever.getPredicatesInDBpedia(queryTerm, topK, partialMatch, CandidateRetriever.Language.EN);
 
             for (Instance i : matches) {
                 if (!resultDBpedia.contains(i)) {
@@ -236,7 +236,7 @@ public class Search {
         //get MATOLL predicates
         for (String queryTerm : queryTerms) {
 
-            List<Instance> matches = retriever.getPredicatesInMatoll(queryTerm, topK);
+            List<Instance> matches = retriever.getPredicatesInMatoll(queryTerm, topK, CandidateRetriever.Language.EN);
 
             for (Instance i : matches) {
                 if (!resultMATOLL.contains(i)) {
@@ -281,7 +281,7 @@ public class Search {
 
         for (String queryTerm : queryTerms) {
 
-            List<Instance> matches = retriever.getAllClasses(queryTerm, topK, partialMatch);
+            List<Instance> matches = retriever.getAllClasses(queryTerm, topK, partialMatch, CandidateRetriever.Language.EN);
 
             for (Instance i : matches) {
 
@@ -371,7 +371,7 @@ public class Search {
 
         for (String queryTerm : queryTerms) {
 
-            List<Instance> matches = retriever.getRestrictionClasses(queryTerm, topK);
+            List<Instance> matches = retriever.getRestrictionClasses(queryTerm, topK, CandidateRetriever.Language.EN);
 
             for (Instance i : matches) {
                 if (!result.contains(i)) {
@@ -401,7 +401,7 @@ public class Search {
 
         //lemmatize 
         if (lemmatize) {
-            String lemmatized = StanfordParser.lemmatize(searchTerm);
+            String lemmatized = StanfordParser.lemmatize(searchTerm, StanfordParser.Language.EN);
 
             if (!queryTerms.contains(lemmatized)) {
                 queryTerms.add(lemmatized);
