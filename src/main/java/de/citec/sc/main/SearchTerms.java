@@ -6,6 +6,8 @@
 package de.citec.sc.main;
 
 import de.citec.sc.query.Candidate;
+import de.citec.sc.query.CandidateRetriever;
+import de.citec.sc.query.CandidateRetrieverOnLucene;
 import de.citec.sc.query.ManualLexicon;
 import de.citec.sc.query.Search;
 import java.util.LinkedHashSet;
@@ -19,14 +21,14 @@ import java.util.Set;
 public class SearchTerms {
 
     public static void main(String[] args) {
-
+        
         Search.useMatoll(true);
 
         ManualLexicon.useManualLexicon(true);
 
         Search.load();
 
-        String word = "Chile Route 68";
+        String word = "created";
         int topK = 100;
         boolean lemmatize = true;
         boolean useWordNet = false;

@@ -52,7 +52,7 @@ public class Main {
             args[6] = "-m2";//matoll
             args[7] = "true";//true, false
             args[8] = "-e";//epochs
-            args[9] = "" + 10;
+            args[9] = "" + 4;
             args[10] = "-s";//sampling steps
             args[11] = "" + 15;
             args[12] = "-k1";//top k samples to select from during training NEL
@@ -102,7 +102,7 @@ public class Main {
                     }
                 }
 
-//                Pipeline.test(trainedModels, testDocuments);
+                Pipeline.test(trainedModels, testDocuments);
             } catch (Exception ex) {
                 java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -137,7 +137,7 @@ public class Main {
         CandidateRetriever retriever = null;
 
         if (ProjectConfiguration.getIndex().equals("lucene")) {
-            retriever = new CandidateRetrieverOnLucene(true, "luceneIndex");
+            retriever = new CandidateRetrieverOnLucene(false, "luceneIndex");
         } else {
             retriever = new CandidateRetrieverOnMemory("rawIndexFiles");
         }
@@ -230,6 +230,8 @@ public class Main {
                 if (d1.getParse().getNodes().size() <= maxWordCount) {
                     documents.add(d1);
                 }
+                else
+                    System.out.println("Short question: " + d1.getQuestionString() + " Query: " + d1.getGoldQueryString().replace("\n", " "));
             } else {
                 System.out.println("Invalid query: " + d1.getQuestionString() + " Query: " + d1.getGoldQueryString().replace("\n", " "));
             }

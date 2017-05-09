@@ -25,7 +25,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-public class AnalyseDocuments {
+public class DatasetAnalysis {
 
     private static final Logger log = LogManager.getFormatterLogger();
 
@@ -47,12 +47,15 @@ public class AnalyseDocuments {
         String trainFile = "src/main/resources/qald-6-train-multilingual.json";
         String testFile = "src/main/resources/qald-6-test-multilingual.json";
 
+        int c1 = 0, c2=0;
         try {
 
             JSONParser parser = new JSONParser();
             HashMap obj = (HashMap) parser.parse(new FileReader(trainFile));
 
             JSONArray questions = (JSONArray) obj.get("questions");
+            c1+=questions.size();
+            
             for (int i = 0; i < questions.size(); i++) {
                 HashMap o1 = (HashMap) questions.get(i);
 
@@ -91,6 +94,7 @@ public class AnalyseDocuments {
             HashMap obj = (HashMap) parser.parse(new FileReader(testFile));
 
             JSONArray questions = (JSONArray) obj.get("questions");
+            c2+=questions.size();
             for (int i = 0; i < questions.size(); i++) {
                 HashMap o1 = (HashMap) questions.get(i);
 
@@ -123,6 +127,7 @@ public class AnalyseDocuments {
             e.printStackTrace();
         }
         
+        System.out.println("QALD-6 instances : "+(c1+c2) +" train: "+c1+" test: "+c2);
         printResults("QALD-6", trainWords, testWords);
     }
 
@@ -200,9 +205,11 @@ public class AnalyseDocuments {
         HashMap<String, Integer> testWords = new HashMap<>();
 
         JSONParser parser = new JSONParser();
+        int c1=0, c2=0;
         try {
 
             JSONArray trainQuestions = (JSONArray) parser.parse(new FileReader(trainFile));
+            c1 = trainQuestions.size();
             for (int i = 0; i < trainQuestions.size(); i++) {
                 HashMap o1 = (HashMap) trainQuestions.get(i);
 
@@ -219,6 +226,7 @@ public class AnalyseDocuments {
             }
 
             JSONArray testQuestions = (JSONArray) parser.parse(new FileReader(testFile));
+            c2+=testQuestions.size();
             for (int i = 0; i < testQuestions.size(); i++) {
                 HashMap o1 = (HashMap) testQuestions.get(i);
 
@@ -233,10 +241,13 @@ public class AnalyseDocuments {
                     testWords.put(token, testWords.getOrDefault(token, 1) + 1);
                 }
             }
+            
+            
 
         } catch (Exception e) {
 
         }
+        System.out.println("WebQuestions instances : "+(c1+c2)+" train: "+c1+" test: "+c2);
 
         printResults("WebQuestions", trainWords, testWords);
 
@@ -250,9 +261,12 @@ public class AnalyseDocuments {
         HashMap<String, Integer> testWords = new HashMap<>();
 
         JSONParser parser = new JSONParser();
+        int c1=0, c2=0;
         try {
 
             JSONArray trainQuestions = (JSONArray) parser.parse(new FileReader(trainFile));
+            c1 = trainQuestions.size();
+            
             for (int i = 0; i < trainQuestions.size(); i++) {
                 HashMap o1 = (HashMap) trainQuestions.get(i);
 
@@ -269,6 +283,8 @@ public class AnalyseDocuments {
             }
 
             JSONArray testQuestions = (JSONArray) parser.parse(new FileReader(testFile));
+            c2 += testQuestions.size();
+            
             for (int i = 0; i < testQuestions.size(); i++) {
                 HashMap o1 = (HashMap) testQuestions.get(i);
 
@@ -283,11 +299,14 @@ public class AnalyseDocuments {
                     testWords.put(token, testWords.getOrDefault(token, 1) + 1);
                 }
             }
+            
+            
 
         } catch (Exception e) {
 
         }
 
+        System.out.println("GraphQuestions instances : "+(c1+c2)+" train: "+c1+" test: "+c2);
         printResults("GraphQuestions", trainWords, testWords);
 
     }

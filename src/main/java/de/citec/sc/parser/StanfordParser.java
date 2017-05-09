@@ -67,18 +67,18 @@ public class StanfordParser {
 
             enPipeline = new StanfordCoreNLP(enProps);
 
-            System.out.println("Loading Stanford models for DE");
-            
-            Properties deProps = StringUtils.argsToProperties(
-                new String[]{"-props", "src/main/resources/dep-parse-properties/german.props"});
-            dePipeline = new StanfordCoreNLP(deProps);
-            
-            
-            System.out.println("Loading Stanford models for ES");
-            
-            Properties esProps = StringUtils.argsToProperties(
-                new String[]{"-props", "src/main/resources/dep-parse-properties/spanish.props"});
-            esPipeline = new StanfordCoreNLP(esProps);
+//            System.out.println("Loading Stanford models for DE");
+//            
+//            Properties deProps = StringUtils.argsToProperties(
+//                new String[]{"-props", "src/main/resources/dep-parse-properties/german.props"});
+//            dePipeline = new StanfordCoreNLP(deProps);
+//            
+//            
+//            System.out.println("Loading Stanford models for ES");
+//            
+//            Properties esProps = StringUtils.argsToProperties(
+//                new String[]{"-props", "src/main/resources/dep-parse-properties/spanish.props"});
+//            esPipeline = new StanfordCoreNLP(esProps);
         
         
 //        String parserModel = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
